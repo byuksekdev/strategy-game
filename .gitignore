@@ -36,6 +36,11 @@
 
 # Visual Studio cache directory
 .vs/
+.vsconfig
+
+.idea/
+.vscode/
+.vscode/**
 
 # Gradle cache directory
 .gradle/
@@ -66,6 +71,7 @@ ExportedObj/
 
 # Unity3D generated file on crash reports
 sysinfo.txt
+*mono_crash*.json
 
 # Mono auto generated files
 mono_crash.*
@@ -104,3 +110,13 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# OS generated files #
+######################
+.DS_Store?
+ehthumbs.db
+Thumbs.db
+*.DS_Store
+ProjectSettings/GvhProjectSettings.xml
+Assembly-CSharp.csproj.DotSettings
+ProjectSettings/RiderScriptEditorPersistedState.asset
