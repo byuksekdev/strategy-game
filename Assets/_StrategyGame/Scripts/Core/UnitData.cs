@@ -1,0 +1,39 @@
+using UnityEngine;
+using StrategyGame.Data;
+
+namespace StrategyGame.Data
+{
+    // Data for all unit types (Soldier 1/2/3).
+    [CreateAssetMenu(fileName = "UnitData", menuName = "StrategyGame/Data/Unit Data")]
+    public class UnitData : ProducibleData
+    {
+        //-------Public Variables-------//
+        public int MaxHP => _maxHP;
+        public int AttackDamage => _attackDamage;
+        public float MoveSpeed => _moveSpeed;
+        public GameObject Prefab => _prefab;
+
+        //------Serialized Fields-------//
+        [Header("Stats")]
+        [SerializeField] private int _maxHP = 10;
+        [SerializeField] private int _attackDamage = 10;
+        [SerializeField] private float _moveSpeed = 3f;
+
+        [Header("Prefab")]
+        [SerializeField] private GameObject _prefab;
+
+        //------Private Variables-------//
+
+        #region UNITY_METHODS
+
+        #endregion
+
+        #region PUBLIC_METHODS
+
+        #endregion
+
+        #region PRIVATE_METHODS
+
+        #endregion
+    }
+}
