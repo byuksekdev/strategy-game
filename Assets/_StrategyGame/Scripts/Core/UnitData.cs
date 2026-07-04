@@ -1,11 +1,10 @@
 using UnityEngine;
-using StrategyGame.Data;
 
 namespace StrategyGame.Data
 {
     // Data for all unit types (Soldier 1/2/3).
     [CreateAssetMenu(fileName = "UnitData", menuName = "StrategyGame/Data/Unit Data")]
-    public class UnitData : ProducibleData
+    public class UnitData : EntityData
     {
         //-------Public Variables-------//
         public int MaxHP => _maxHP;

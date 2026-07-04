@@ -4,7 +4,7 @@ namespace StrategyGame.Data
 {
     // Data for all buildings (Barracks, Power Plant, etc.).
     [CreateAssetMenu(fileName = "BuildingData", menuName = "StrategyGame/Data/Building Data")]
-    public class BuildingData : ProducibleData
+    public class BuildingData : EntityData
     {
         //-------Public Variables-------//
         public BuildingType BuildingType => _buildingType;
@@ -12,11 +12,6 @@ namespace StrategyGame.Data
 
         public Vector2Int Size => _size;
         public GameObject Prefab => _prefab;
-
-        // Units that can be produced from this building. If empty, the production menu is not shown.
-        public UnitData[] ProducibleUnits => _producibleUnits;
-
-        public bool CanProduceUnits => _producibleUnits != null && _producibleUnits.Length > 0;
 
         //------Serialized Fields-------//
         [Header("Type")]
@@ -30,9 +25,6 @@ namespace StrategyGame.Data
 
         [Header("Prefab")]
         [SerializeField] private GameObject _prefab;
-
-        [Header("Producible Units")]
-        [SerializeField] private UnitData[] _producibleUnits;
 
         //------Private Variables-------//
 
