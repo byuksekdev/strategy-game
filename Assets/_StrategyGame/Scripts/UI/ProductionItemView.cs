@@ -4,7 +4,7 @@ using UnityEngine.UI;
 using TMPro;
 using StrategyGame.Data;
 
-namespace StrategyGame.UI.ProductionMenu
+namespace StrategyGame.UI
 {
     // Represents a single item in the production menu or information panel.
     // When Bind() is called, the data is injected; the click callback is passed through.

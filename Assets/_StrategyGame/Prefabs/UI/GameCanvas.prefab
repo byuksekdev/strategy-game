@@ -446,7 +446,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3197021797471144226, guid: bd42f74ae12bf41108ce68d64f55a570, type: 3}
       propertyPath: m_Name
-      value: InformationMenu
+      value: InformationPanel
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: bd42f74ae12bf41108ce68d64f55a570, type: 3}
