@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d149532b94f844774a5de3f22dc85d6d, type: 3}
-  m_Name: PowerPlant
+  m_Name: PanteonBust
   m_EditorClassIdentifier: 
-  _displayName: Power Plant
-  _icon: {fileID: 21300000, guid: 407a4f9a7f1ec4cc2b9b65eb26895bca, type: 3}
-  _buildingType: 2
-  _maxHP: 50
-  _size: {x: 2, y: 3}
-  _prefab: {fileID: 2216546673857411592, guid: 24a2c7be2adc74b4a8d3dc56898cf2ad, type: 3}
+  _displayName: Panteon Bust
+  _icon: {fileID: 21300000, guid: a0db2aaa4abdf4f279e88cbe37d32710, type: 3}
+  _buildingType: 4
+  _maxHP: 150
+  _size: {x: 2, y: 2}
+  _prefab: {fileID: 2216546673857411592, guid: 0d91a166e87994a09b076c0b423a786c, type: 3}

@@ -5,5 +5,7 @@ namespace StrategyGame.Data
         None,
         Barracks,
         PowerPlant,
+        WatchTower,
+        PanteonBust,
     }
 }

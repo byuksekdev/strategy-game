@@ -10,18 +10,18 @@ PrefabInstance:
     - target: {fileID: 1678070399431002902, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 21300000, guid: 407a4f9a7f1ec4cc2b9b65eb26895bca, type: 3}
+      objectReference: {fileID: 21300000, guid: 53325d3256bfe4a578ddf5d63a3c3324, type: 3}
     - target: {fileID: 6738445095382478058, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_RootOrder
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6738445095382478058, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 2
+      value: 2.04
       objectReference: {fileID: 0}
     - target: {fileID: 6738445095382478058, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.5
+      value: 2.01
       objectReference: {fileID: 0}
     - target: {fileID: 6738445095382478058, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_LocalPosition.z
@@ -57,35 +57,35 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6738445095382478059, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_Name
-      value: Building_PowerPlant
+      value: Building_WatchTower
       objectReference: {fileID: 0}
     - target: {fileID: 8356493535606086097, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.47
+      value: 0.65
       objectReference: {fileID: 0}
     - target: {fileID: 8356493535606086097, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.47
+      value: 0.46
       objectReference: {fileID: 0}
     - target: {fileID: 8356493535606086097, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.47
+      value: 0.46
       objectReference: {fileID: 0}
     - target: {fileID: 8356493535606086097, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.03
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8356493535606086097, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8458020163268806462, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.75
-      objectReference: {fileID: 0}
-    - target: {fileID: 8458020163268806462, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 1.15
+      value: 0.78
       objectReference: {fileID: 0}
     - target: {fileID: 8458020163268806462, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.75
+      value: 1.15
       objectReference: {fileID: 0}
     - target: {fileID: 8458020163268806462, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_ConstrainProportionsScale
@@ -98,7 +98,7 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 6738445095382478059, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
   m_PrefabInstance: {fileID: 4846160618461779683}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &3322704985672866976
+--- !u!114 &9150531787659771496
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -107,6 +107,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 2216546673857411592}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7db0be90feb7543828eb2bbe1c8f18fc, type: 3}
+  m_Script: {fileID: 11500000, guid: 2f4d9d680e92b4afeb20271bc57ab595, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 

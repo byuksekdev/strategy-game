@@ -10,7 +10,7 @@ PrefabInstance:
     - target: {fileID: 1678070399431002902, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 21300000, guid: 407a4f9a7f1ec4cc2b9b65eb26895bca, type: 3}
+      objectReference: {fileID: 21300000, guid: a0db2aaa4abdf4f279e88cbe37d32710, type: 3}
     - target: {fileID: 6738445095382478058, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_RootOrder
       value: 0
@@ -21,7 +21,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6738445095382478058, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.5
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 6738445095382478058, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_LocalPosition.z
@@ -57,23 +57,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6738445095382478059, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_Name
-      value: Building_PowerPlant
+      value: Building_PanteonBust
       objectReference: {fileID: 0}
     - target: {fileID: 8356493535606086097, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.47
+      value: 0.4
       objectReference: {fileID: 0}
     - target: {fileID: 8356493535606086097, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.47
+      value: 0.4
       objectReference: {fileID: 0}
     - target: {fileID: 8356493535606086097, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.47
+      value: 0.4
       objectReference: {fileID: 0}
     - target: {fileID: 8356493535606086097, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.03
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8458020163268806462, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_LocalScale.x
@@ -81,7 +81,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8458020163268806462, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_LocalScale.y
-      value: 1.15
+      value: 0.75
       objectReference: {fileID: 0}
     - target: {fileID: 8458020163268806462, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_LocalScale.z
@@ -89,7 +89,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8458020163268806462, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_ConstrainProportionsScale
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
@@ -98,7 +98,7 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 6738445095382478059, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
   m_PrefabInstance: {fileID: 4846160618461779683}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &3322704985672866976
+--- !u!114 &750214207017344330
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -107,6 +107,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 2216546673857411592}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7db0be90feb7543828eb2bbe1c8f18fc, type: 3}
+  m_Script: {fileID: 11500000, guid: d1c2ccfb228424c7cab59966455929f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
