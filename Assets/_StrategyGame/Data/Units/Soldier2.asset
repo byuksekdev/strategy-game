@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Soldier2
   m_EditorClassIdentifier: 
   _displayName: Solider 2
-  _icon: {fileID: 10901, guid: 0000000000000000f000000000000000, type: 0}
+  _icon: {fileID: 21300000, guid: bf060e9415d3f4607a4e89702ead38b4, type: 3}
   _maxHP: 10
   _attackDamage: 5
   _moveSpeed: 3

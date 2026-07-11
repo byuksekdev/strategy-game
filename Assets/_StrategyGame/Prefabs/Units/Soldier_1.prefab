@@ -9,7 +9,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 994621830867109472, guid: b56558f3bf17243f390317d27f8f75e5, type: 3}
       propertyPath: m_Name
-      value: Soldier_Base
+      value: Soldier_1
       objectReference: {fileID: 0}
     - target: {fileID: 994621830867109473, guid: b56558f3bf17243f390317d27f8f75e5, type: 3}
       propertyPath: m_RootOrder
@@ -57,3 +57,32 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b56558f3bf17243f390317d27f8f75e5, type: 3}
+--- !u!1 &65222102864385722 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 994621830867109472, guid: b56558f3bf17243f390317d27f8f75e5, type: 3}
+  m_PrefabInstance: {fileID: 948619467210002650}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8655662846698336304
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 65222102864385722}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4bfadc53efc947bab222aeb16553b02, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _highlight: {fileID: 5977269026975963741}
+--- !u!114 &5977269026975963741 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6906739399607339655, guid: b56558f3bf17243f390317d27f8f75e5, type: 3}
+  m_PrefabInstance: {fileID: 948619467210002650}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 65222102864385722}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78568af0136f94d5ea0ee9f1afb1055e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
