@@ -17,6 +17,10 @@ namespace StrategyGame.Units
     //
     // Concrete subclasses override BaseAttackDamage / BaseAttackCooldown for defaults.
     // UnitData values take precedence when the unit is initialized with data.
+    //
+    // IGridProvider is injected via Initialize() (method injection / DIP).
+    // UnitBase only performs read operations on the grid (pathfinding, coordinate conversion),
+    // so IGridProvider — not IGridService — is the correct minimal dependency (ISP).
     public abstract class UnitBase : MonoBehaviour, IDamageable, ISelectable
     {
         //-------Public Variables-------//
@@ -41,6 +45,10 @@ namespace StrategyGame.Units
         private UnitData _unitData;
         private int _currentHP;
         private Vector2Int _gridPosition;
+
+        // Injected once via Initialize(); used for all grid read operations.
+        // Typed as IGridProvider: units only need read access (ISP).
+        private IGridProvider _gridProvider;
 
         // Outer coroutine handle (MoveActionCoroutine or AttackCoroutine).
         private Coroutine _activeCoroutine;
@@ -69,9 +77,11 @@ namespace StrategyGame.Units
 
         #region PUBLIC_METHODS
 
-        // Called by UnitSpawnSystem after LeanPool.Spawn to inject runtime data.
-        public void Initialize(UnitData data, Vector2Int startCell)
+        // Called by UnitSpawnSystem after LeanPool.Spawn to inject runtime data and grid provider.
+        // gridProvider gives read-only grid access for coordinate conversion and pathfinding.
+        public void Initialize(UnitData data, Vector2Int startCell, IGridProvider gridProvider)
         {
+            _gridProvider = gridProvider;
             _unitData = data;
             _currentHP = MaxHP;
             _gridPosition = startCell;
@@ -79,8 +89,8 @@ namespace StrategyGame.Units
             OnHealthChanged?.Invoke(_currentHP, MaxHP);
             UnitRegistry.Register(this, startCell);
 
-            Vector3 worldPos = GridManager.Instance != null
-                ? GridManager.Instance.GridToWorld(startCell)
+            Vector3 worldPos = _gridProvider != null
+                ? _gridProvider.GridToWorld(startCell)
                 : transform.position;
 
             transform.position = worldPos;
@@ -151,7 +161,7 @@ namespace StrategyGame.Units
         // Recalculates the path dynamically if a cell becomes occupied mid-movement.
         private IEnumerator MoveCoroutine(Vector2Int targetCell)
         {
-            IGridService grid = GridManager.Instance;
+            IGridProvider grid = _gridProvider;
             if (grid == null) yield break;
 
             List<Vector2Int> path = AStarPathfinder.FindPath(_gridPosition, targetCell, grid);
@@ -205,7 +215,7 @@ namespace StrategyGame.Units
         // until the target dies, disappears, or the action is cancelled externally.
         private IEnumerator AttackCoroutine(Vector2Int targetCell, IDamageable target)
         {
-            IGridService grid = GridManager.Instance;
+            IGridProvider grid = _gridProvider;
             if (grid == null) yield break;
 
             // Find a walkable, unit-free cell adjacent to the target.
@@ -232,7 +242,7 @@ namespace StrategyGame.Units
         }
 
         // BFS-1: returns the first walkable, unit-free neighbour of targetCell.
-        private static Vector2Int? FindAdjacentFreeCell(Vector2Int targetCell, IGridService grid)
+        private static Vector2Int? FindAdjacentFreeCell(Vector2Int targetCell, IGridProvider grid)
         {
             GridCell cell = grid.GetCell(targetCell);
             if (cell == null) return null;

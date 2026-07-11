@@ -17,8 +17,10 @@ namespace StrategyGame.Buildings
     //   - Left click (if not over UI) + valid area → IBuildingFactory places the building.
     //   - Right click or ESC → cancel the placement.
     //
-    // IBuildingFactory is injected via Awake(); call Inject() before the first Update
-    // to substitute a different implementation (e.g. a test double).
+    // Dependencies are injected via Inject() (DIP / method injection).
+    // BuildingPlacementController only reads the grid (preview, ghost scaling),
+    // so IGridProvider is the correct minimal dependency (ISP).
+    // GameBootstrapper is the sole caller of Inject() — it is the composition root.
     public class BuildingPlacementController : MonoBehaviour
     {
         //-------Public Variables-------//
@@ -38,6 +40,7 @@ namespace StrategyGame.Buildings
 
         //------Private Variables-------//
         private IBuildingFactory _buildingFactory;
+        private IGridProvider _grid;
         private Camera _camera;
         private bool _isPlacing;
         private BuildingData _pendingData;
@@ -51,7 +54,6 @@ namespace StrategyGame.Buildings
         private void Awake()
         {
             _camera = Camera.main;
-            _buildingFactory = new BuildingFactory();
         }
 
         private void OnEnable()
@@ -90,11 +92,17 @@ namespace StrategyGame.Buildings
 
         #region PUBLIC_METHODS
 
-        // Allows substituting the factory implementation at runtime (e.g. test doubles).
-        // Must be called before placement begins.
+        // Called by GameBootstrapper to inject the factory implementation.
+        // Also accepts test doubles for unit tests.
         public void Inject(IBuildingFactory buildingFactory)
         {
             _buildingFactory = buildingFactory;
+        }
+
+        // Called by GameBootstrapper to inject the grid read dependency.
+        public void Inject(IGridProvider grid)
+        {
+            _grid = grid;
         }
 
         // Cancels the placement mode; ghost and highlight are cleared.
@@ -131,11 +139,10 @@ namespace StrategyGame.Buildings
         // Updates the ghost and highlighter every frame.
         private void UpdateGhostAndHighlight()
         {
-            IGridService grid = GridManager.Instance;
-            if (grid == null || _pendingData == null) return;
+            if (_grid == null || _pendingData == null) return;
 
             Vector3 mouseWorld = GetMouseWorldPosition();
-            Vector2Int mouseCell = grid.WorldToGrid(mouseWorld);
+            Vector2Int mouseCell = _grid.WorldToGrid(mouseWorld);
 
             // Align the building to the mouse cell (intentional integer division: single-width buildings align to top-left)
             _currentOrigin = new Vector2Int(
@@ -143,13 +150,13 @@ namespace StrategyGame.Buildings
                 mouseCell.y - _pendingData.Size.y / 2
             );
 
-            _isCurrentValid = grid.IsAreaFree(_currentOrigin, _pendingData.Size);
+            _isCurrentValid = _grid.IsAreaFree(_currentOrigin, _pendingData.Size);
 
-            Vector3 areaCenter = grid.GetAreaWorldCenter(_currentOrigin, _pendingData.Size);
+            Vector3 areaCenter = _grid.GetAreaWorldCenter(_currentOrigin, _pendingData.Size);
             if (_ghostObject != null)
                 _ghostObject.transform.position = areaCenter;
 
-            _highlighter?.Show(grid, _currentOrigin, _pendingData.Size, _isCurrentValid);
+            _highlighter?.Show(_grid, _currentOrigin, _pendingData.Size, _isCurrentValid);
         }
 
         // Places the building at the current grid origin and exits the placement mode.
@@ -190,11 +197,10 @@ namespace StrategyGame.Buildings
         // Scales the ghost to the target building's grid footprint (size * cellSize).
         private void ScaleGhostToBuilding(BuildingData data)
         {
-            IGridService grid = GridManager.Instance;
-            if (grid == null || _ghostRenderer == null || _ghostRenderer.sprite == null) return;
+            if (_grid == null || _ghostRenderer == null || _ghostRenderer.sprite == null) return;
 
-            float targetWidth = data.Size.x * grid.CellSize;
-            float targetHeight = data.Size.y * grid.CellSize;
+            float targetWidth = data.Size.x * _grid.CellSize;
+            float targetHeight = data.Size.y * _grid.CellSize;
 
             float spriteWidth = _ghostRenderer.sprite.rect.width / _ghostRenderer.sprite.pixelsPerUnit;
             float spriteHeight = _ghostRenderer.sprite.rect.height / _ghostRenderer.sprite.pixelsPerUnit;

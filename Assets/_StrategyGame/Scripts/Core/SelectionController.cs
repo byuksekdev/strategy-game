@@ -23,6 +23,10 @@ namespace StrategyGame.Core
     //   → A* from unit's cell to hovered cell, drawn by PathPreviewRenderer (1 draw call).
     //
     // Responds to SelectionChangedEvent(null) to keep _currentSelected in sync.
+    //
+    // IGridProvider is injected via Inject() (DIP). SelectionController performs only
+    // read operations on the grid, so IGridProvider is the correct minimal dependency (ISP).
+    // GameBootstrapper is the sole caller of Inject() — it is the composition root.
     public class SelectionController : MonoBehaviour
     {
         //-------Public Variables-------//
@@ -35,8 +39,9 @@ namespace StrategyGame.Core
         [SerializeField] private PathPreviewRenderer _pathPreviewRenderer;
 
         //------Private Variables-------//
-        private Camera    _camera;
+        private Camera _camera;
         private ISelectable _currentSelected;
+        private IGridProvider _grid;
 
         // Tracks the last hovered grid cell to avoid recalculating A* every frame.
         private Vector2Int _lastHoverCell = new Vector2Int(int.MinValue, int.MinValue);
@@ -81,6 +86,13 @@ namespace StrategyGame.Core
 
         #region PUBLIC_METHODS
 
+        // Called by GameBootstrapper to inject the grid dependency.
+        // Must be called before the first Update() frame.
+        public void Inject(IGridProvider grid)
+        {
+            _grid = grid;
+        }
+
         #endregion
 
         #region PRIVATE_METHODS
@@ -88,12 +100,11 @@ namespace StrategyGame.Core
         // Left click: select building (via grid) or unit (via UnitRegistry).
         private void HandleLeftClick()
         {
-            IGridService grid = GridManager.Instance;
-            if (grid == null) { ClearSelection(); return; }
+            if (_grid == null) { ClearSelection(); return; }
 
             Vector3    worldPos = GetMouseWorldPosition();
-            Vector2Int coord    = grid.WorldToGrid(worldPos);
-            GridCell   cell     = grid.GetCell(coord);
+            Vector2Int coord    = _grid.WorldToGrid(worldPos);
+            GridCell   cell     = _grid.GetCell(coord);
 
             // Priority 1: building occupying that grid cell.
             if (cell != null && cell.IsOccupied)
@@ -126,12 +137,11 @@ namespace StrategyGame.Core
             UnitBase actor = SelectedUnit;
             if (actor == null) return;
 
-            IGridService grid = GridManager.Instance;
-            if (grid == null) return;
+            if (_grid == null) return;
 
             Vector3    worldPos = GetMouseWorldPosition();
-            Vector2Int coord    = grid.WorldToGrid(worldPos);
-            GridCell   cell     = grid.GetCell(coord);
+            Vector2Int coord    = _grid.WorldToGrid(worldPos);
+            GridCell   cell     = _grid.GetCell(coord);
 
             if (cell == null) return;
 
@@ -175,27 +185,26 @@ namespace StrategyGame.Core
                 return;
             }
 
-            IGridService grid = GridManager.Instance;
-            if (grid == null) return;
+            if (_grid == null) return;
 
             Vector3    worldPos  = GetMouseWorldPosition();
-            Vector2Int hoverCell = grid.WorldToGrid(worldPos);
+            Vector2Int hoverCell = _grid.WorldToGrid(worldPos);
 
             if (hoverCell == _lastHoverCell) return;
             _lastHoverCell = hoverCell;
 
-            if (!grid.IsValidCoordinate(hoverCell))
+            if (!_grid.IsValidCoordinate(hoverCell))
             {
                 _pathPreviewRenderer?.Clear();
                 return;
             }
 
-            List<Vector2Int> path = AStarPathfinder.FindPath(actor.GridPosition, hoverCell, grid);
+            List<Vector2Int> path = AStarPathfinder.FindPath(actor.GridPosition, hoverCell, _grid);
 
             if (path == null || path.Count == 0)
                 _pathPreviewRenderer?.Clear();
             else
-                _pathPreviewRenderer?.ShowPath(path, grid);
+                _pathPreviewRenderer?.ShowPath(path, _grid);
         }
 
         // Selects the given selectable, deselecting the previous one.

@@ -14,6 +14,10 @@ namespace StrategyGame.Units
     //   2. Expand outward (4-directional BFS) until a walkable, unit-free cell is found.
     //   3. If the entire grid is occupied, log a warning and abort.
     //
+    // IGridProvider is injected via Inject() (DIP). UnitSpawnSystem only reads the grid
+    // (BFS search, coordinate conversion), so IGridProvider is sufficient (ISP).
+    // GameBootstrapper is the sole caller of Inject() — it is the composition root.
+    //
     // This component should live on a persistent scene GameObject (e.g. "Systems").
     public class UnitSpawnSystem : MonoBehaviour
     {
@@ -24,6 +28,7 @@ namespace StrategyGame.Units
         [SerializeField] private Transform _unitParent;
 
         //------Private Variables-------//
+        private IGridProvider _grid;
 
         #region UNITY_METHODS
 
@@ -41,6 +46,12 @@ namespace StrategyGame.Units
 
         #region PUBLIC_METHODS
 
+        // Called by GameBootstrapper to inject the grid read dependency.
+        public void Inject(IGridProvider grid)
+        {
+            _grid = grid;
+        }
+
         #endregion
 
         #region PRIVATE_METHODS
@@ -56,15 +67,14 @@ namespace StrategyGame.Units
                 return;
             }
 
-            IGridService grid = GridManager.Instance;
-            if (grid == null)
+            if (_grid == null)
             {
-                Debug.LogWarning("[UnitSpawnSystem] GridManager not found in scene.");
+                Debug.LogWarning("[UnitSpawnSystem] IGridProvider dependency is null — call Inject() first.");
                 return;
             }
 
-            Vector2Int startCell = grid.WorldToGrid(producer.SpawnWorldPosition);
-            Vector2Int? spawnCell = FindNearestFreeCell(startCell, grid);
+            Vector2Int startCell = _grid.WorldToGrid(producer.SpawnWorldPosition);
+            Vector2Int? spawnCell = FindNearestFreeCell(startCell, _grid);
 
             if (!spawnCell.HasValue)
             {
@@ -72,12 +82,12 @@ namespace StrategyGame.Units
                 return;
             }
 
-            SpawnUnit(unitData, spawnCell.Value, grid);
+            SpawnUnit(unitData, spawnCell.Value, _grid);
         }
 
         // BFS from startCell to find the nearest cell that is both grid-walkable
         // and not already occupied by a live unit.
-        private static Vector2Int? FindNearestFreeCell(Vector2Int startCell, IGridService grid)
+        private static Vector2Int? FindNearestFreeCell(Vector2Int startCell, IGridProvider grid)
         {
             var visited = new HashSet<Vector2Int>();
             var queue = new Queue<Vector2Int>();
@@ -106,7 +116,7 @@ namespace StrategyGame.Units
             return null;
         }
 
-        private void SpawnUnit(UnitData unitData, Vector2Int cell, IGridService grid)
+        private void SpawnUnit(UnitData unitData, Vector2Int cell, IGridProvider grid)
         {
             Vector3 worldPos = grid.GridToWorld(cell);
             GameObject go = LeanPool.Spawn(unitData.Prefab, worldPos, Quaternion.identity, _unitParent);
@@ -120,7 +130,7 @@ namespace StrategyGame.Units
                 return;
             }
 
-            unit.Initialize(unitData, cell);
+            unit.Initialize(unitData, cell, grid);
             EventBus<UnitSpawnedEvent>.Publish(new UnitSpawnedEvent(go));
         }
 

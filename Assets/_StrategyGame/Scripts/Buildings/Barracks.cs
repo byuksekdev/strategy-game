@@ -1,7 +1,6 @@
 using UnityEngine;
 using StrategyGame.Core;
 using StrategyGame.Data;
-using StrategyGame.Grid;
 
 namespace StrategyGame.Buildings
 {
@@ -75,7 +74,7 @@ namespace StrategyGame.Buildings
                 _spawnPoint.SetParent(transform);
             }
 
-            if (GridManager.Instance == null)
+            if (GridProvider == null)
             {
                 _spawnPoint.localPosition = Vector3.zero;
                 return;
@@ -83,8 +82,8 @@ namespace StrategyGame.Buildings
 
             Vector2Int desiredCell = GridOrigin + _spawnCellOffset;
 
-            if (GridManager.Instance.IsValidCoordinate(desiredCell))
-                _spawnPoint.position = GridManager.Instance.GridToWorld(desiredCell);
+            if (GridProvider.IsValidCoordinate(desiredCell))
+                _spawnPoint.position = GridProvider.GridToWorld(desiredCell);
             else
                 _spawnPoint.localPosition = Vector3.zero;
         }
