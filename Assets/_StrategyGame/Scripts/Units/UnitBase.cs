@@ -21,7 +21,7 @@ namespace StrategyGame.Units
     // IGridProvider is injected via Initialize() (method injection / DIP).
     // UnitBase only performs read operations on the grid (pathfinding, coordinate conversion),
     // so IGridProvider — not IGridService — is the correct minimal dependency (ISP).
-    public abstract class UnitBase : MonoBehaviour, IDamageable, ISelectable
+    public abstract class UnitBase : MonoBehaviour, IDamageable, ISelectable, IInfoPanelProvider
     {
         //-------Public Variables-------//
         public int MaxHP => _unitData != null ? _unitData.MaxHP : BaseMaxHP;
@@ -32,6 +32,12 @@ namespace StrategyGame.Units
 
         public UnitData Data => _unitData;
         public Vector2Int GridPosition => _gridPosition;
+
+        // IInfoPanelProvider — allows InformationPanelController to display unit info
+        // without a concrete UnitBase type-check. UnitData is a subtype of EntityData.
+        public EntityData EntityData => _unitData;
+        public bool CanBeDeleted => false;
+        public IUnitProducer UnitProducer => null;
 
         // Fired whenever HP changes. HealthBarView and InformationPanelController
         // subscribe directly instead of listening to a global event bus.

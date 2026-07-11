@@ -14,13 +14,25 @@ namespace StrategyGame.Buildings
     // Grid dependencies are injected via Initialize() (method injection / DIP):
     //   _occupancyManager : IGridOccupancyManager — only FreeArea is needed here (ISP).
     //   GridProvider      : IGridProvider          — exposed to subclasses that need read access.
-    public abstract class BuildingBase : MonoBehaviour, IDamageable, ISelectable, IProducible
+    public abstract class BuildingBase : MonoBehaviour, IDamageable, ISelectable, IProducible, IInfoPanelProvider
     {
         //-------Public Variables-------//
         public int MaxHP => _buildingData != null ? _buildingData.MaxHP : 0;
         public int CurrentHP => _currentHP;
         public bool IsDead => _currentHP <= 0;
+
+        // IProducible — used by the production menu to retrieve display data.
         public EntityData Data => _buildingData;
+
+        // IInfoPanelProvider — used by InformationPanelController without casting to a concrete type.
+        public EntityData EntityData => _buildingData;
+        public bool CanBeDeleted => true;
+
+        // Returns this as IUnitProducer when the concrete subclass (e.g. Barracks) implements it;
+        // null for non-producing buildings (e.g. PowerPlant). InformationPanelController reads this
+        // to decide whether to show the production list, without knowing the concrete type.
+        public virtual IUnitProducer UnitProducer => this as IUnitProducer;
+
         public BuildingData BuildingData => _buildingData;
         public Vector2Int GridOrigin => _gridOrigin;
 

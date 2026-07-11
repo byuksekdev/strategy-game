@@ -1,9 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
-using StrategyGame.Buildings;
 using StrategyGame.Core;
 using StrategyGame.Data;
-using StrategyGame.Units;
 
 namespace StrategyGame.UI.InformationPanel
 {
@@ -12,14 +10,16 @@ namespace StrategyGame.UI.InformationPanel
     // Four selection scenarios:
     //   1. Building card clicked from the left production menu
     //        → Name + icon; delete button and production list hidden.
-    //   2. Building selected from the grid
-    //        → Name + icon + HP + delete button + production list (if IUnitProducer).
-    //   3. Unit selected from the grid
-    //        → Name + icon + HP; delete button and production list hidden.
-    //   4. Empty area clicked, X button pressed, or placement mode ended
+    //   2. Grid entity selected (building, unit, or any future IInfoPanelProvider type)
+    //        → Name + icon + HP + delete button (if CanBeDeleted) + production list (if UnitProducer).
+    //   3. Empty area clicked, X button pressed, or placement mode ended
     //        → Panel closes.
     //
-    // HP updates come from the selected entity's local OnHealthChanged event,
+    // OCP: HandleGridSelection depends on IInfoPanelProvider — not on BuildingBase or UnitBase.
+    // Adding a new entity type (Vehicle, Hero, etc.) requires zero changes here; the new type
+    // simply implements IInfoPanelProvider and everything wires up automatically.
+    //
+    // HP updates come from the selected entity's local IDamageable.OnHealthChanged event,
     // not from the global EventBus, to avoid reacting to every hit in the scene.
     //
     // Sub-views (EntityInfoView, UnitListController) are purely visual;
@@ -44,15 +44,13 @@ namespace StrategyGame.UI.InformationPanel
         [Tooltip("Closes the panel.")]
         [SerializeField] private Button _closeButton;
 
-        [Tooltip("Deletes the selected building from the grid. Visible only for grid-placed buildings.")]
+        [Tooltip("Deletes the selected building from the grid. Visible only when CanBeDeleted is true.")]
         [SerializeField] private Button _deleteButton;
 
         //------Private Variables-------//
-        // Non-null when a grid-placed building is selected; null otherwise.
-        private BuildingBase _selectedBuilding;
-
-        // Non-null when a unit is selected; null otherwise.
-        private UnitBase _selectedUnit;
+        // Non-null while a grid entity is selected. Used for HP event subscription and deletion.
+        // Typed as IDamageable so this controller has no dependency on concrete entity classes.
+        private IDamageable _selectedDamageable;
 
         #region UNITY_METHODS
 
@@ -70,7 +68,7 @@ namespace StrategyGame.UI.InformationPanel
             EventBus<UnitDestroyedEvent>.Subscribe(HandleUnitDestroyed);
 
             _closeButton.onClick.AddListener(ClosePanel);
-            _deleteButton.onClick.AddListener(DeleteSelectedBuilding);
+            _deleteButton.onClick.AddListener(DeleteSelectedEntity);
         }
 
         private void OnDisable()
@@ -82,7 +80,7 @@ namespace StrategyGame.UI.InformationPanel
             EventBus<UnitDestroyedEvent>.Unsubscribe(HandleUnitDestroyed);
 
             _closeButton.onClick.RemoveListener(ClosePanel);
-            _deleteButton.onClick.RemoveListener(DeleteSelectedBuilding);
+            _deleteButton.onClick.RemoveListener(DeleteSelectedEntity);
         }
 
         #endregion
@@ -102,7 +100,7 @@ namespace StrategyGame.UI.InformationPanel
         #region PRIVATE_METHODS
 
         // Building card clicked from the left production menu.
-        // Building not yet placed → no delete button, no production list.
+        // Building not yet placed → no delete button, no production list, no HP.
         private void HandleMenuSelection(BuildingProductionRequestedEvent e)
         {
             DetachHealthListener();
@@ -115,6 +113,9 @@ namespace StrategyGame.UI.InformationPanel
         }
 
         // A grid entity was selected (or selection was cleared).
+        //
+        // OCP-compliant: dispatches on IInfoPanelProvider, not on concrete types.
+        // Any class that implements IInfoPanelProvider is handled here without modification.
         private void HandleGridSelection(SelectionChangedEvent e)
         {
             if (e.Selected == null)
@@ -123,32 +124,31 @@ namespace StrategyGame.UI.InformationPanel
                 return;
             }
 
-            if (e.Selected is BuildingBase building)
+            if (e.Selected is IInfoPanelProvider provider)
             {
-                ShowForBuilding(building);
-                return;
-            }
-
-            if (e.Selected is UnitBase unit)
-            {
-                ShowForUnit(unit);
+                ShowForEntity(provider);
                 return;
             }
 
             HidePanel();
         }
 
-        // Shows full building information: name, icon, HP, production list (if any), delete button.
-        private void ShowForBuilding(BuildingBase building)
+        // Populates and shows the panel for any IInfoPanelProvider entity.
+        // Replaces the previous ShowForBuilding / ShowForUnit pair.
+        private void ShowForEntity(IInfoPanelProvider provider)
         {
             DetachHealthListener();
-            _selectedBuilding = building;
-            _selectedBuilding.OnHealthChanged += HandleSelectedEntityHealthChanged;
 
-            _entityInfoView.Bind(building.BuildingData, building);
-            _deleteButton.gameObject.SetActive(true);
+            // Both BuildingBase and UnitBase implement IDamageable; safe for any IInfoPanelProvider.
+            _selectedDamageable = provider as IDamageable;
+            if (_selectedDamageable != null)
+                _selectedDamageable.OnHealthChanged += HandleSelectedEntityHealthChanged;
 
-            if (building is IUnitProducer producer && producer.CanProduceUnits)
+            _entityInfoView.Bind(provider.EntityData, _selectedDamageable);
+            _deleteButton.gameObject.SetActive(provider.CanBeDeleted);
+
+            IUnitProducer producer = provider.UnitProducer;
+            if (producer != null && producer.CanProduceUnits)
                 _unitListController.ShowForProducer(producer);
             else
                 _unitListController.Hide();
@@ -156,46 +156,31 @@ namespace StrategyGame.UI.InformationPanel
             _panelRoot.SetActive(true);
         }
 
-        // Shows unit information: name, icon, HP. No delete button or production list.
-        private void ShowForUnit(UnitBase unit)
-        {
-            DetachHealthListener();
-            _selectedUnit = unit;
-            _selectedUnit.OnHealthChanged += HandleSelectedEntityHealthChanged;
-
-            _entityInfoView.Bind(unit.Data, unit);
-            _deleteButton.gameObject.SetActive(false);
-            _unitListController.Hide();
-
-            _panelRoot.SetActive(true);
-        }
-
-        // Placement mode ended; close the panel if only a menu selection is showing.
+        // Placement mode ended; close the panel if only a menu selection is showing
+        // (no grid entity selected → _selectedDamageable is null).
         private void HandlePlacementExited(PlacementModeExitedEvent e)
         {
-            if (_selectedBuilding == null && _selectedUnit == null)
+            if (_selectedDamageable == null)
                 HidePanel();
         }
 
-        // A building was destroyed externally: close if it was the one selected.
+        // An entity was destroyed externally: close if it is the currently selected one.
         private void HandleBuildingDestroyed(BuildingDestroyedEvent e)
         {
-            if (_selectedBuilding != null && _selectedBuilding.gameObject == e.Building)
+            if (_selectedDamageable is MonoBehaviour mb && mb.gameObject == e.Building)
                 HidePanel();
         }
 
-        // A unit was destroyed: close if it was the one selected.
         private void HandleUnitDestroyed(UnitDestroyedEvent e)
         {
-            if (_selectedUnit != null && _selectedUnit.gameObject == e.Unit)
+            if (_selectedDamageable is MonoBehaviour mb && mb.gameObject == e.Unit)
                 HidePanel();
         }
 
         // HP changed on the currently selected entity: refresh the HP display.
         private void HandleSelectedEntityHealthChanged(int currentHP, int maxHP)
         {
-            IDamageable damageable = (IDamageable)_selectedBuilding ?? _selectedUnit;
-            _entityInfoView.RefreshHP(damageable);
+            _entityInfoView.RefreshHP(_selectedDamageable);
         }
 
         // Closes the panel silently (no SelectionChangedEvent broadcast).
@@ -209,28 +194,23 @@ namespace StrategyGame.UI.InformationPanel
         }
 
         // Unsubscribes from the previously selected entity's local health event
-        // and clears the selection references.
+        // and clears the selection reference.
         private void DetachHealthListener()
         {
-            if (_selectedBuilding != null)
+            if (_selectedDamageable != null)
             {
-                _selectedBuilding.OnHealthChanged -= HandleSelectedEntityHealthChanged;
-                _selectedBuilding = null;
-            }
-
-            if (_selectedUnit != null)
-            {
-                _selectedUnit.OnHealthChanged -= HandleSelectedEntityHealthChanged;
-                _selectedUnit = null;
+                _selectedDamageable.OnHealthChanged -= HandleSelectedEntityHealthChanged;
+                _selectedDamageable = null;
             }
         }
 
-        // Delete button pressed: destroy the currently selected building.
-        private void DeleteSelectedBuilding()
+        // Delete button pressed: destroy the currently selected entity via IDamageable.Die().
+        // The button is only visible when provider.CanBeDeleted is true (i.e. grid-placed buildings).
+        private void DeleteSelectedEntity()
         {
-            if (_selectedBuilding == null) return;
+            if (_selectedDamageable == null) return;
 
-            BuildingBase toDelete = _selectedBuilding;
+            IDamageable toDelete = _selectedDamageable;
             HidePanel();
             toDelete.Die();
         }
