@@ -10,6 +10,7 @@ namespace StrategyGame.Data
         public int MaxHP => _maxHP;
         public int AttackDamage => _attackDamage;
         public float MoveSpeed => _moveSpeed;
+        public float AttackCooldown => _attackCooldown;
         public GameObject Prefab => _prefab;
 
         //------Serialized Fields-------//
@@ -17,6 +18,8 @@ namespace StrategyGame.Data
         [SerializeField] private int _maxHP = 10;
         [SerializeField] private int _attackDamage = 10;
         [SerializeField] private float _moveSpeed = 3f;
+        [Tooltip("Seconds between consecutive attacks while in melee range.")]
+        [SerializeField] private float _attackCooldown = 1f;
 
         [Header("Prefab")]
         [SerializeField] private GameObject _prefab;
