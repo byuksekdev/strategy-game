@@ -6,15 +6,25 @@ using StrategyGame.Grid;
 
 namespace StrategyGame.Buildings
 {
+    // Concrete implementation of IBuildingFactory.
     // Creates and places buildings on the grid from BuildingData ScriptableObjects.
     // Selects the correct prefab via BuildingData.Prefab, spawns it through LeanPool,
     // occupies the grid area, and wires runtime data via BuildingBase.Initialize().
     //
-    // Usage: BuildingBase building = BuildingFactory.Create(barracksData, gridOrigin);
-    public static class BuildingFactory
+    // IGridService is injected via the constructor (DIP):
+    //   consumers depend on IBuildingFactory, not this class,
+    //   and this class depends on IGridService, not GridManager.
+    public class BuildingFactory : IBuildingFactory
     {
+        private readonly IGridService _grid;
+
+        public BuildingFactory(IGridService grid)
+        {
+            _grid = grid;
+        }
+
         // Returns the initialized BuildingBase, or null if placement failed.
-        public static BuildingBase Create(BuildingData data, Vector2Int gridOrigin, Transform parent = null)
+        public BuildingBase Create(BuildingData data, Vector2Int gridOrigin, Transform parent = null)
         {
             if (data == null)
             {
@@ -28,26 +38,25 @@ namespace StrategyGame.Buildings
                 return null;
             }
 
-            IGridService grid = GridManager.Instance;
-            if (grid == null)
+            if (_grid == null)
             {
-                Debug.LogWarning("[BuildingFactory] GridManager not found in scene.");
+                Debug.LogWarning("[BuildingFactory] IGridService dependency is null.");
                 return null;
             }
 
-            Vector3 worldCenter = grid.GetAreaWorldCenter(gridOrigin, data.Size);
+            Vector3 worldCenter = _grid.GetAreaWorldCenter(gridOrigin, data.Size);
             BuildingBase building = SpawnBuilding(data, worldCenter, parent);
             if (building == null) return null;
 
-            if (!grid.TryOccupyArea(gridOrigin, data.Size, building.gameObject))
+            if (!_grid.TryOccupyArea(gridOrigin, data.Size, building.gameObject))
             {
                 Debug.Log($"[BuildingFactory] Cannot place '{data.DisplayName}' at {gridOrigin}: area is occupied.");
                 LeanPool.Despawn(building.gameObject);
                 return null;
             }
 
-            building.Initialize(data, gridOrigin);
-            GameEvents.BuildingPlaced(building.gameObject);
+            building.Initialize(data, gridOrigin, _grid);
+            EventBus<BuildingPlacedEvent>.Publish(new BuildingPlacedEvent(building.gameObject));
             return building;
         }
 

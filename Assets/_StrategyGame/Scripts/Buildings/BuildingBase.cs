@@ -10,6 +10,10 @@ namespace StrategyGame.Buildings
     // Abstract base for all buildings (Barracks, PowerPlant, etc.).
     // Handles HP, selection callbacks, and grid cleanup on destruction.
     // Concrete buildings inherit from this and override OnInitialized() for custom setup.
+    //
+    // Grid dependencies are injected via Initialize() (method injection / DIP):
+    //   _occupancyManager : IGridOccupancyManager — only FreeArea is needed here (ISP).
+    //   GridProvider      : IGridProvider          — exposed to subclasses that need read access.
     public abstract class BuildingBase : MonoBehaviour, IDamageable, ISelectable, IProducible
     {
         //-------Public Variables-------//
@@ -31,6 +35,13 @@ namespace StrategyGame.Buildings
         private Vector2Int _gridOrigin;
         private int _currentHP;
 
+        // ISP: Die() only needs to free cells — no read operations required.
+        private IGridOccupancyManager _occupancyManager;
+
+        // Exposed to subclasses that need read-only grid access (e.g. Barracks spawn point).
+        // Typed as IGridProvider so subclasses cannot accidentally call write operations.
+        protected IGridProvider GridProvider { get; private set; }
+
         private SelectionHighlight _highlight;
 
         #region UNITY_METHODS
@@ -44,9 +55,16 @@ namespace StrategyGame.Buildings
 
         #region PUBLIC_METHODS
 
-        // Called by BuildingFactory after instantiation to inject runtime data and grid position.
-        public void Initialize(BuildingData data, Vector2Int gridOrigin)
+        // Called by BuildingFactory after instantiation to inject runtime data, grid position,
+        // and grid service dependencies.
+        //
+        // gridService is split internally into two narrowed interfaces (ISP):
+        //   IGridOccupancyManager → stored in _occupancyManager for Die()
+        //   IGridProvider         → stored in GridProvider for subclass read access
+        public void Initialize(BuildingData data, Vector2Int gridOrigin, IGridService gridService)
         {
+            _occupancyManager = gridService;
+            GridProvider = gridService;
             _buildingData = data;
             _gridOrigin = gridOrigin;
             _currentHP = data.MaxHP;
@@ -66,8 +84,8 @@ namespace StrategyGame.Buildings
 
         public virtual void Die()
         {
-            if (_buildingData != null && GridManager.Instance != null)
-                GridManager.Instance.FreeArea(_gridOrigin, _buildingData.Size);
+            if (_buildingData != null && _occupancyManager != null)
+                _occupancyManager.FreeArea(_gridOrigin, _buildingData.Size);
 
             EventBus<BuildingDestroyedEvent>.Publish(new BuildingDestroyedEvent(gameObject));
             LeanPool.Despawn(gameObject);
