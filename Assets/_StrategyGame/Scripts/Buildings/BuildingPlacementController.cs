@@ -6,15 +6,19 @@ using StrategyGame.Grid;
 
 namespace StrategyGame.Buildings
 {
-    // BuildingPlacementController is responsible for managing the building placement mode.
-    // When a building is clicked in the Production menu, the GameEvents.OnBuildingProductionRequested
-    // event is triggered, and the placement mode is entered.
+    // Manages building placement mode.
+    // When a building card is clicked in the Production menu, BuildingProductionRequestedEvent
+    // is published on the EventBus. This controller subscribes to that event and enters
+    // placement mode.
     //
     // Placement mode:
     //   - The ghost sprite of the selected building follows the mouse in grid-snapped position.
     //   - GridHighlighter shows a green/red overlay based on the area's validity.
-    //   - Left click (if not over UI) + valid area → BuildingFactory is used to place the building.
+    //   - Left click (if not over UI) + valid area → IBuildingFactory places the building.
     //   - Right click or ESC → cancel the placement.
+    //
+    // IBuildingFactory is injected via Awake(); call Inject() before the first Update
+    // to substitute a different implementation (e.g. a test double).
     public class BuildingPlacementController : MonoBehaviour
     {
         //-------Public Variables-------//
@@ -22,9 +26,8 @@ namespace StrategyGame.Buildings
 
         //------Serialized Fields-------//
         [Header("References")]
-        [Tooltip("Overlay for building placement preview on the grid. Should be assigned to the GridHighlighter in the scene.")]
+        [Tooltip("Overlay for building placement preview on the grid.")]
         [SerializeField] private GridHighlighter _highlighter;
-
 
         [Header("Ghost Settings")]
         [Tooltip("Transparency level of the ghost sprite (0 = fully transparent, 1 = fully opaque).")]
@@ -34,6 +37,7 @@ namespace StrategyGame.Buildings
         [SerializeField] private int _ghostSortingOrder = 5;
 
         //------Private Variables-------//
+        private IBuildingFactory _buildingFactory;
         private Camera _camera;
         private bool _isPlacing;
         private BuildingData _pendingData;
@@ -47,16 +51,17 @@ namespace StrategyGame.Buildings
         private void Awake()
         {
             _camera = Camera.main;
+            _buildingFactory = new BuildingFactory();
         }
 
         private void OnEnable()
         {
-            GameEvents.OnBuildingProductionRequested += StartPlacement;
+            EventBus<BuildingProductionRequestedEvent>.Subscribe(HandleBuildingProductionRequested);
         }
 
         private void OnDisable()
         {
-            GameEvents.OnBuildingProductionRequested -= StartPlacement;
+            EventBus<BuildingProductionRequestedEvent>.Unsubscribe(HandleBuildingProductionRequested);
         }
 
         private void OnDestroy()
@@ -85,20 +90,11 @@ namespace StrategyGame.Buildings
 
         #region PUBLIC_METHODS
 
-        // Starts the placement mode with the given BuildingData.
-        // If there is an active placement, it is cancelled first.
-        public void StartPlacement(BuildingData data)
+        // Allows substituting the factory implementation at runtime (e.g. test doubles).
+        // Must be called before placement begins.
+        public void Inject(IBuildingFactory buildingFactory)
         {
-            if (data == null) return;
-
-            if (_isPlacing)
-                ExitPlacementMode();
-
-            _pendingData = data;
-            _isPlacing = true;
-
-            CreateGhost(data);
-            GameEvents.PlacementModeEntered(data);
+            _buildingFactory = buildingFactory;
         }
 
         // Cancels the placement mode; ghost and highlight are cleared.
@@ -111,6 +107,26 @@ namespace StrategyGame.Buildings
         #endregion
 
         #region PRIVATE_METHODS
+
+        private void HandleBuildingProductionRequested(BuildingProductionRequestedEvent e)
+        {
+            StartPlacement(e.BuildingData);
+        }
+
+        // Starts the placement mode with the given BuildingData.
+        // If there is an active placement, it is cancelled first.
+        private void StartPlacement(BuildingData data)
+        {
+            if (data == null) return;
+
+            if (_isPlacing)
+                ExitPlacementMode();
+
+            _pendingData = data;
+            _isPlacing = true;
+
+            CreateGhost(data);
+        }
 
         // Updates the ghost and highlighter every frame.
         private void UpdateGhostAndHighlight()
@@ -139,14 +155,14 @@ namespace StrategyGame.Buildings
         // Places the building at the current grid origin and exits the placement mode.
         private void ConfirmPlacement()
         {
-            BuildingBase placed = BuildingFactory.Create(_pendingData, _currentOrigin);
+            BuildingBase placed = _buildingFactory.Create(_pendingData, _currentOrigin);
 
             // Factory returns null in invalid areas; this is rare but possible when _isCurrentValid is true.
             if (placed != null)
                 ExitPlacementMode();
         }
 
-        // Clears all placement state and triggers the PlacementModeExited event.
+        // Clears all placement state and publishes PlacementModeExitedEvent.
         private void ExitPlacementMode()
         {
             _isPlacing = false;
@@ -155,7 +171,7 @@ namespace StrategyGame.Buildings
             DestroyGhost();
             _highlighter?.Hide();
 
-            GameEvents.PlacementModeExited();
+            EventBus<PlacementModeExitedEvent>.Publish(new PlacementModeExitedEvent());
         }
 
         // Creates the building ghost: tries to use the prefab's sprite, falls back to the icon.
@@ -215,7 +231,6 @@ namespace StrategyGame.Buildings
         private Vector3 GetMouseWorldPosition()
         {
             Vector3 screen = Input.mousePosition;
-            // For orthographic camera, z = distance of the camera to the grid plane
             screen.z = Mathf.Abs(_camera.transform.position.z);
             return _camera.ScreenToWorldPoint(screen);
         }

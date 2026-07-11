@@ -102,6 +102,18 @@ namespace StrategyGame.Grid
             return true;
         }
 
+        // Returns the world-space centre of a rectangular grid area.
+        // GridToWorld(origin) gives the centre of the bottom-left cell;
+        // offset by (size - 1) * 0.5 * cellSize to reach the full area's centre.
+        public Vector3 GetAreaWorldCenter(Vector2Int origin, Vector2Int size)
+        {
+            Vector3 cellCentre = GridToWorld(origin);
+            return cellCentre + new Vector3(
+                (size.x - 1) * 0.5f * CellSize,
+                (size.y - 1) * 0.5f * CellSize,
+                0f);
+        }
+
         public bool TryOccupyArea(Vector2Int origin, Vector2Int size, GameObject occupant)
         {
             if (!IsAreaFree(origin, size)) return false;

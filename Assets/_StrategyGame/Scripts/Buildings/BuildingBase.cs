@@ -1,3 +1,4 @@
+using System;
 using Lean.Pool;
 using UnityEngine;
 using StrategyGame.Core;
@@ -19,6 +20,10 @@ namespace StrategyGame.Buildings
         public BuildingData BuildingData => _buildingData;
         public Vector2Int GridOrigin => _gridOrigin;
 
+        // Fired whenever HP changes. HealthBarView and InformationPanelController
+        // subscribe directly instead of listening to a global event bus.
+        public event Action<int, int> OnHealthChanged;
+
         //------Serialized Fields-------//
 
         //------Private Variables-------//
@@ -26,7 +31,14 @@ namespace StrategyGame.Buildings
         private Vector2Int _gridOrigin;
         private int _currentHP;
 
+        private SelectionHighlight _highlight;
+
         #region UNITY_METHODS
+
+        private void Awake()
+        {
+            _highlight = GetComponent<SelectionHighlight>();
+        }
 
         #endregion
 
@@ -38,6 +50,7 @@ namespace StrategyGame.Buildings
             _buildingData = data;
             _gridOrigin = gridOrigin;
             _currentHP = data.MaxHP;
+            OnHealthChanged?.Invoke(_currentHP, MaxHP);
             OnInitialized();
         }
 
@@ -46,7 +59,7 @@ namespace StrategyGame.Buildings
             if (IsDead || amount <= 0) return;
 
             _currentHP = Mathf.Max(0, _currentHP - amount);
-            GameEvents.HPChanged(this);
+            OnHealthChanged?.Invoke(_currentHP, MaxHP);
 
             if (IsDead) Die();
         }
@@ -56,18 +69,22 @@ namespace StrategyGame.Buildings
             if (_buildingData != null && GridManager.Instance != null)
                 GridManager.Instance.FreeArea(_gridOrigin, _buildingData.Size);
 
-            GameEvents.BuildingDestroyed(gameObject);
+            EventBus<BuildingDestroyedEvent>.Publish(new BuildingDestroyedEvent(gameObject));
             LeanPool.Despawn(gameObject);
         }
 
-        // Broadcasts the selection to the event bus so the UI (Info Panel) can react.
+        // Broadcasts the selection so the UI (Info Panel) can react.
         public virtual void OnSelected()
         {
-            GameEvents.SelectionChanged(this);
+            _highlight?.Highlight();
+            EventBus<SelectionChangedEvent>.Publish(new SelectionChangedEvent(this));
         }
 
-        // Visual deselection response. Selection null-broadcast is handled by the Selection system.
-        public virtual void OnDeselected() { }
+        // Visual deselection is delegated to SelectionHighlight; null-broadcast is handled by SelectionController.
+        public virtual void OnDeselected()
+        {
+            _highlight?.ClearHighlight();
+        }
 
         #endregion
 

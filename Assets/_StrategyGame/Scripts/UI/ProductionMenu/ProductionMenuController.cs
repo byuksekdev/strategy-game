@@ -54,11 +54,11 @@ namespace StrategyGame.UI.ProductionMenu
                 _config.AvailableBuildings, OnBuildingItemClicked);
         }
 
-        // When a building item is clicked, it publishes the BuildingProductionRequested event to the event bus; 
-        // the placement system will listen to it.
+        // When a building item is clicked, it publishes the BuildingProductionRequestedEvent to the event bus;
+        // both the placement system and the information panel react to it.
         private void OnBuildingItemClicked(BuildingData data)
         {
-            GameEvents.BuildingProductionRequested(data);
+            EventBus<BuildingProductionRequestedEvent>.Publish(new BuildingProductionRequestedEvent(data));
         }
 
         #endregion

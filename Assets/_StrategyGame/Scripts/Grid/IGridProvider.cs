@@ -30,5 +30,9 @@ namespace StrategyGame.Grid
 
         // Returns true when every cell in the area is inside bounds and walkable.
         bool IsAreaFree(Vector2Int origin, Vector2Int size);
+
+        // Returns the world-space centre of a multi-cell area.
+        // Used by BuildingFactory to correctly position buildings that span multiple cells.
+        Vector3 GetAreaWorldCenter(Vector2Int origin, Vector2Int size);
     }
 }
