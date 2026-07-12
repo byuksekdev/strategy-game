@@ -116,12 +116,14 @@ namespace StrategyGame.Units
             _activeCoroutine = StartCoroutine(MoveActionCoroutine(targetCell));
         }
 
-        // Moves adjacent to the target cell and deals one strike of damage.
-        // Cancels any ongoing action before starting.
-        public void AttackTarget(Vector2Int targetCell, IDamageable target)
+        // Moves adjacent to any cell in the target's footprint and attacks repeatedly.
+        // Accepts a list of cells so that multi-cell buildings (e.g. 4×4 Barracks) are
+        // handled correctly — free neighbours are searched across the entire footprint, not
+        // just the single clicked cell. Cancels any ongoing action before starting.
+        public void AttackTarget(IReadOnlyList<Vector2Int> targetCells, IDamageable target)
         {
             CancelActiveAction();
-            _activeCoroutine = StartCoroutine(AttackCoroutine(targetCell, target));
+            _activeCoroutine = StartCoroutine(AttackCoroutine(targetCells, target));
         }
 
         public void TakeDamage(int amount)
@@ -139,7 +141,7 @@ namespace StrategyGame.Units
         public virtual void Die()
         {
             CancelActiveAction();
-            EventBus<UnitDestroyedEvent>.Publish(new UnitDestroyedEvent(gameObject, _gridPosition));
+            EventBus.Publish(new UnitDestroyedEvent(gameObject, _gridPosition));
             LeanPool.Despawn(gameObject);
         }
 
@@ -225,15 +227,17 @@ namespace StrategyGame.Units
             }
         }
 
-        // Moves adjacent to the target then attacks repeatedly (cooldown between strikes)
-        // until the target dies, disappears, or the action is cancelled externally.
-        private IEnumerator AttackCoroutine(Vector2Int targetCell, IDamageable target)
+        // Moves adjacent to the target's footprint then attacks repeatedly (cooldown between
+        // strikes) until the target is dead, despawned, or the action is cancelled externally.
+        private IEnumerator AttackCoroutine(IReadOnlyList<Vector2Int> targetCells, IDamageable target)
         {
             IGridProvider grid = _gridProvider;
             if (grid == null) yield break;
 
-            // Find a walkable, unit-free cell adjacent to the target.
-            Vector2Int? adjacentCell = FindAdjacentFreeCell(targetCell, grid);
+            // Search all cells in the target's footprint for a free adjacent cell.
+            // This correctly handles multi-cell buildings: an interior cell of a 4×4 Barracks
+            // has no walkable direct neighbours, but the building's border cells do.
+            Vector2Int? adjacentCell = FindAdjacentFreeCell(targetCells, grid);
             if (!adjacentCell.HasValue) yield break;
 
             // Move to the adjacent cell (store handle so CancelActiveAction can stop it).
@@ -241,13 +245,16 @@ namespace StrategyGame.Units
             yield return _innerMoveCoroutine;
             _innerMoveCoroutine = null;
 
-            // Attack loop: keep striking until the target is dead or gone.
+            // Attack loop: keep striking until the target is dead or no longer active.
+            // IsTargetActive guards against LeanPool object reuse: Despawn sets the
+            // GameObject inactive, so a deactivated target is treated as gone even if
+            // its IsDead check hasn't been reached yet.
             var cooldownWait = new WaitForSeconds(AttackCooldown);
-            while (target != null && !target.IsDead)
+            while (!target.IsDead && IsTargetActive(target))
             {
                 target.TakeDamage(AttackDamage);
 
-                if (target == null || target.IsDead) break;
+                if (target.IsDead || !IsTargetActive(target)) break;
 
                 yield return cooldownWait;
             }
@@ -255,20 +262,36 @@ namespace StrategyGame.Units
             _activeCoroutine = null;
         }
 
-        // BFS-1: returns the first walkable, unit-free neighbour of targetCell.
-        private static Vector2Int? FindAdjacentFreeCell(Vector2Int targetCell, IGridProvider grid)
+        // Searches the cardinal neighbours of EVERY cell in the target's footprint and
+        // returns the first that is both walkable and free of other units.
+        // A visited set prevents checking the same neighbour cell twice when footprint
+        // cells share edges (common in multi-cell buildings).
+        private static Vector2Int? FindAdjacentFreeCell(IReadOnlyList<Vector2Int> targetCells, IGridProvider grid)
         {
-            GridCell cell = grid.GetCell(targetCell);
-            if (cell == null) return null;
+            var visited = new HashSet<Vector2Int>();
 
-            foreach (GridCell neighbour in grid.GetNeighbors(cell))
+            foreach (Vector2Int targetCell in targetCells)
             {
-                if (neighbour.IsWalkable && !UnitRegistry.IsCellOccupied(neighbour.Coordinate))
-                    return neighbour.Coordinate;
+                GridCell cell = grid.GetCell(targetCell);
+                if (cell == null) continue;
+
+                foreach (GridCell neighbour in grid.GetNeighbors(cell))
+                {
+                    if (!visited.Add(neighbour.Coordinate)) continue;
+
+                    if (neighbour.IsWalkable && !UnitRegistry.IsCellOccupied(neighbour.Coordinate))
+                        return neighbour.Coordinate;
+                }
             }
 
             return null;
         }
+
+        // Returns true when the target is a live (active) MonoBehaviour.
+        // LeanPool.Despawn sets the GameObject inactive, so this guards against
+        // the object pool reuse scenario where IsDead would otherwise be stale.
+        private static bool IsTargetActive(IDamageable target)
+            => target is MonoBehaviour mb && mb.gameObject.activeInHierarchy;
 
         private void CancelActiveAction()
         {

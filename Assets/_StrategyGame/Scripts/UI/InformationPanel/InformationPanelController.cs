@@ -61,11 +61,11 @@ namespace StrategyGame.UI.InformationPanel
 
         private void OnEnable()
         {
-            EventBus<SelectionChangedEvent>.Subscribe(HandleGridSelection);
-            EventBus<BuildingProductionRequestedEvent>.Subscribe(HandleMenuSelection);
-            EventBus<PlacementModeExitedEvent>.Subscribe(HandlePlacementExited);
-            EventBus<BuildingDestroyedEvent>.Subscribe(HandleBuildingDestroyed);
-            EventBus<UnitDestroyedEvent>.Subscribe(HandleUnitDestroyed);
+            EventBus.Subscribe<SelectionChangedEvent>(HandleGridSelection);
+            EventBus.Subscribe<BuildingProductionRequestedEvent>(HandleMenuSelection);
+            EventBus.Subscribe<PlacementModeExitedEvent>(HandlePlacementExited);
+            EventBus.Subscribe<BuildingDestroyedEvent>(HandleBuildingDestroyed);
+            EventBus.Subscribe<UnitDestroyedEvent>(HandleUnitDestroyed);
 
             _closeButton.onClick.AddListener(ClosePanel);
             _deleteButton.onClick.AddListener(DeleteSelectedEntity);
@@ -73,11 +73,11 @@ namespace StrategyGame.UI.InformationPanel
 
         private void OnDisable()
         {
-            EventBus<SelectionChangedEvent>.Unsubscribe(HandleGridSelection);
-            EventBus<BuildingProductionRequestedEvent>.Unsubscribe(HandleMenuSelection);
-            EventBus<PlacementModeExitedEvent>.Unsubscribe(HandlePlacementExited);
-            EventBus<BuildingDestroyedEvent>.Unsubscribe(HandleBuildingDestroyed);
-            EventBus<UnitDestroyedEvent>.Unsubscribe(HandleUnitDestroyed);
+            EventBus.Unsubscribe<SelectionChangedEvent>(HandleGridSelection);
+            EventBus.Unsubscribe<BuildingProductionRequestedEvent>(HandleMenuSelection);
+            EventBus.Unsubscribe<PlacementModeExitedEvent>(HandlePlacementExited);
+            EventBus.Unsubscribe<BuildingDestroyedEvent>(HandleBuildingDestroyed);
+            EventBus.Unsubscribe<UnitDestroyedEvent>(HandleUnitDestroyed);
 
             _closeButton.onClick.RemoveListener(ClosePanel);
             _deleteButton.onClick.RemoveListener(DeleteSelectedEntity);
@@ -92,7 +92,7 @@ namespace StrategyGame.UI.InformationPanel
         public void ClosePanel()
         {
             HidePanel();
-            EventBus<SelectionChangedEvent>.Publish(new SelectionChangedEvent(null));
+            EventBus.Publish(new SelectionChangedEvent(null));
         }
 
         #endregion

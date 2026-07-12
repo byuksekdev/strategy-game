@@ -5,15 +5,14 @@ using StrategyGame.Core;
 
 namespace StrategyGame.Grid
 {
+
     // GridManager owns all grid state and is the single place responsible for freeing
     // occupied areas when buildings are destroyed (SRP).
     // It subscribes to BuildingDestroyedEvent so that BuildingBase never needs a direct
     // reference to the grid write interface (IGridOccupancyManager) — the event carries
     // the necessary grid data (GridOrigin, GridSize) instead.
     public class GridManager : MonoBehaviour, IGridService
-    {
-        //-------Public Variables-------//
-        public event Action<GridAreaChangedArgs> OnAreaOccupancyChanged;
+    {        //-------Public Variables-------//
         public static IGridService Instance { get; private set; }
         public int Width => _config.Width;
         public int Height => _config.Height;
@@ -40,12 +39,12 @@ namespace StrategyGame.Grid
 
         private void OnEnable()
         {
-            EventBus<BuildingDestroyedEvent>.Subscribe(HandleBuildingDestroyed);
+            EventBus.Subscribe<BuildingDestroyedEvent>(HandleBuildingDestroyed);
         }
 
         private void OnDisable()
         {
-            EventBus<BuildingDestroyedEvent>.Unsubscribe(HandleBuildingDestroyed);
+            EventBus.Unsubscribe<BuildingDestroyedEvent>(HandleBuildingDestroyed);
         }
 
         private void OnDestroy()
@@ -135,14 +134,12 @@ namespace StrategyGame.Grid
             if (!IsAreaFree(origin, size)) return false;
 
             ApplyToArea(origin, size, cell => cell.SetOccupant(occupant));
-            OnAreaOccupancyChanged?.Invoke(new GridAreaChangedArgs(origin, size, isOccupied: true));
             return true;
         }
 
         public void FreeArea(Vector2Int origin, Vector2Int size)
         {
             ApplyToArea(origin, size, cell => cell.SetOccupant(null));
-            OnAreaOccupancyChanged?.Invoke(new GridAreaChangedArgs(origin, size, isOccupied: false));
         }
 
         #endregion
@@ -150,7 +147,7 @@ namespace StrategyGame.Grid
         #region PRIVATE_METHODS
 
         // Frees the grid area when a building is destroyed.
-        // EventBus<BuildingDestroyedEvent> is synchronous, so FreeArea runs before LeanPool.Despawn.
+        // EventBus.Publish is synchronous, so FreeArea runs before LeanPool.Despawn.
         private void HandleBuildingDestroyed(BuildingDestroyedEvent e)
         {
             if (e.GridSize != Vector2Int.zero)

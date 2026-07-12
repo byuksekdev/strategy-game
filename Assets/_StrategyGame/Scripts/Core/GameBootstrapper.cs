@@ -25,6 +25,7 @@ namespace StrategyGame.Core
         [SerializeField] private BuildingPlacementController _placementController;
         [SerializeField] private SelectionController _selectionController;
         [SerializeField] private UnitSpawnSystem _unitSpawnSystem;
+        [SerializeField] private GridVisualizer _gridVisualizer;
 
         #region UNITY_METHODS
 
@@ -49,6 +50,17 @@ namespace StrategyGame.Core
             _selectionController?.Inject((IGridProvider)grid); // selection reads grid only
 
             _unitSpawnSystem?.Inject((IGridProvider)grid);     // spawn BFS reads grid only
+
+            _gridVisualizer?.Inject((IGridProvider)grid);      // visualizer reads grid dimensions only
+        }
+
+        // Clears UnitRegistry when this bootstrapper is destroyed (e.g. runtime scene reload).
+        // StaticStateResetter handles the play-session start via [RuntimeInitializeOnLoadMethod],
+        // but SceneManager.LoadScene at runtime does NOT trigger that attribute again — so an
+        // explicit clear here guarantees a clean slate after any in-game scene transition.
+        private void OnDestroy()
+        {
+            UnitRegistry.Clear();
         }
 
         #endregion

@@ -12,8 +12,8 @@ namespace StrategyGame.Core
     //
     // Left click (not over UI, not in placement mode):
     //   → WorldToGrid → check GridCell.Occupant (buildings) OR UnitRegistry (units)
-    //       found → entity.OnSelected() [visual only] + EventBus<SelectionChangedEvent>.Publish(entity)
-    //       empty → ClearSelection() + EventBus<SelectionChangedEvent>.Publish(null)
+    //       found → entity.OnSelected() [visual only] + EventBus.Publish(entity)
+    //       empty → ClearSelection() + EventBus.Publish(null)
     //
     // Right click (unit selected, not over UI):
     //   → clicked on IDamageable (building/unit) → UnitBase.AttackTarget(cell, target)
@@ -57,12 +57,14 @@ namespace StrategyGame.Core
 
         private void OnEnable()
         {
-            EventBus<SelectionChangedEvent>.Subscribe(HandleExternalSelectionChange);
+            EventBus.Subscribe<SelectionChangedEvent>(HandleExternalSelectionChange);
+            EventBus.Subscribe<BuildingPlacedEvent>(HandleBuildingPlaced);
         }
 
         private void OnDisable()
         {
-            EventBus<SelectionChangedEvent>.Unsubscribe(HandleExternalSelectionChange);
+            EventBus.Unsubscribe<SelectionChangedEvent>(HandleExternalSelectionChange);
+            EventBus.Unsubscribe<BuildingPlacedEvent>(HandleBuildingPlaced);
         }
 
         private void Update()
@@ -146,12 +148,17 @@ namespace StrategyGame.Core
             if (cell == null) return;
 
             // Attack building occupying that cell.
+            // The full building footprint is passed so that FindAdjacentFreeCell can search
+            // neighbours across all building cells — not just the single clicked cell.
+            // Without this, clicking an interior cell of a 4×4 Barracks would always fail
+            // because every direct neighbour of an interior cell is also part of the building.
             if (cell.IsOccupied)
             {
                 IDamageable target = cell.Occupant.GetComponent<IDamageable>();
                 if (target != null && !target.IsDead)
                 {
-                    actor.AttackTarget(coord, target);
+                    List<Vector2Int> footprint = GetBuildingFootprint(cell.Occupant);
+                    actor.AttackTarget(footprint, target);
                     _pathPreviewRenderer?.Clear();
                     return;
                 }
@@ -161,7 +168,7 @@ namespace StrategyGame.Core
             UnitBase targetUnit = UnitRegistry.GetUnitAt(coord);
             if (targetUnit != null && targetUnit != actor && !targetUnit.IsDead)
             {
-                actor.AttackTarget(coord, targetUnit);
+                actor.AttackTarget(new List<Vector2Int> { coord }, targetUnit);
                 _pathPreviewRenderer?.Clear();
                 return;
             }
@@ -172,6 +179,25 @@ namespace StrategyGame.Core
                 actor.MoveTo(coord);
                 _pathPreviewRenderer?.Clear();
             }
+        }
+
+        // Collects every grid cell belonging to the building's rectangular footprint.
+        // Falls back to a single-cell list when the BuildingBase component is absent.
+        private static List<Vector2Int> GetBuildingFootprint(GameObject buildingGo)
+        {
+            BuildingBase building = buildingGo.GetComponent<BuildingBase>();
+            if (building == null || building.BuildingData == null)
+                return new List<Vector2Int>(1) { Vector2Int.zero };
+
+            Vector2Int origin = building.GridOrigin;
+            Vector2Int size   = building.BuildingData.Size;
+
+            var cells = new List<Vector2Int>(size.x * size.y);
+            for (int x = origin.x; x < origin.x + size.x; x++)
+                for (int y = origin.y; y < origin.y + size.y; y++)
+                    cells.Add(new Vector2Int(x, y));
+
+            return cells;
         }
 
         // Redraws path preview when a unit is selected and the hovered cell changes.
@@ -214,7 +240,7 @@ namespace StrategyGame.Core
             _currentSelected?.OnDeselected();
             _currentSelected = selectable;
             _currentSelected.OnSelected();
-            EventBus<SelectionChangedEvent>.Publish(new SelectionChangedEvent(selectable));
+            EventBus.Publish(new SelectionChangedEvent(selectable));
             _lastHoverCell = new Vector2Int(int.MinValue, int.MinValue);
         }
 
@@ -226,7 +252,17 @@ namespace StrategyGame.Core
             _currentSelected.OnDeselected();
             _currentSelected = null;
             _pathPreviewRenderer?.Clear();
-            EventBus<SelectionChangedEvent>.Publish(new SelectionChangedEvent(null));
+            EventBus.Publish(new SelectionChangedEvent(null));
+        }
+
+        // Auto-selects the building immediately after it is placed on the grid,
+        // so the info panel (and unit production options for Barracks) opens without a manual click.
+        private void HandleBuildingPlaced(BuildingPlacedEvent e)
+        {
+            if (e.Building == null) return;
+            ISelectable selectable = e.Building.GetComponent<ISelectable>();
+            if (selectable != null)
+                Select(selectable);
         }
 
         // Responds to SelectionChangedEvent(null) from external sources (X button, building deleted, etc.)

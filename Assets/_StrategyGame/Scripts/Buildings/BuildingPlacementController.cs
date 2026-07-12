@@ -58,12 +58,12 @@ namespace StrategyGame.Buildings
 
         private void OnEnable()
         {
-            EventBus<BuildingProductionRequestedEvent>.Subscribe(HandleBuildingProductionRequested);
+            EventBus.Subscribe<BuildingProductionRequestedEvent>(HandleBuildingProductionRequested);
         }
 
         private void OnDisable()
         {
-            EventBus<BuildingProductionRequestedEvent>.Unsubscribe(HandleBuildingProductionRequested);
+            EventBus.Unsubscribe<BuildingProductionRequestedEvent>(HandleBuildingProductionRequested);
         }
 
         private void OnDestroy()
@@ -178,7 +178,7 @@ namespace StrategyGame.Buildings
             DestroyGhost();
             _highlighter?.Hide();
 
-            EventBus<PlacementModeExitedEvent>.Publish(new PlacementModeExitedEvent());
+            EventBus.Publish(new PlacementModeExitedEvent());
         }
 
         // Creates the building ghost: tries to use the prefab's sprite, falls back to the icon.

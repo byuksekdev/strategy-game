@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -12,9 +11,6 @@ namespace StrategyGame.Grid
         int Width { get; }
         int Height { get; }
         float CellSize { get; }
-
-        // Fired once per operation, not once per cell. Used to invalidate pathfinding/visual caches.
-        event Action<GridAreaChangedArgs> OnAreaOccupancyChanged;
 
         GridCell GetCell(int x, int y);
         GridCell GetCell(Vector2Int coordinate);

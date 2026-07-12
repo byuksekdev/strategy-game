@@ -98,7 +98,7 @@ namespace StrategyGame.Buildings
         // then returns the object to the pool. BuildingBase has no direct grid write dependency.
         public virtual void Die()
         {
-            EventBus<BuildingDestroyedEvent>.Publish(
+            EventBus.Publish(
                 new BuildingDestroyedEvent(gameObject, _gridOrigin, _buildingData?.Size ?? Vector2Int.zero));
 
             LeanPool.Despawn(gameObject);

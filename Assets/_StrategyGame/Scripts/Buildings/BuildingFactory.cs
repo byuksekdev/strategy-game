@@ -56,7 +56,7 @@ namespace StrategyGame.Buildings
             }
 
             building.Initialize(data, gridOrigin, _grid);
-            EventBus<BuildingPlacedEvent>.Publish(new BuildingPlacedEvent(building.gameObject));
+            EventBus.Publish(new BuildingPlacedEvent(building.gameObject));
             return building;
         }
 

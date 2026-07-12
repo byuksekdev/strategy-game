@@ -22,6 +22,12 @@ namespace StrategyGame.Pathfinding
     // Costs (scaled integers to avoid floating-point drift):
     //   Straight move  → 10
     //   Diagonal move  → 14  (≈ 10 × √2)
+    //
+    // Open-set structure: binary min-heap with lazy deletion.
+    //   When a node's g-score is improved, a new entry is pushed to the heap and
+    //   the old entry is left in place. Stale entries are skipped when popped
+    //   (they will not be in inOpenSet). This gives O(log n) push/pop instead of
+    //   the previous O(n) linear scan, reducing worst-case cost from O(n²) to O(n log n).
     public static class AStarPathfinder
     {
         //-------Public Variables-------//
@@ -30,28 +36,38 @@ namespace StrategyGame.Pathfinding
         private const int StraightCost = 10;
         private const int DiagonalCost = 14;
 
+        private struct HeapNode
+        {
+            public int        FScore;
+            public Vector2Int Coord;
+        }
+
         #region PUBLIC_METHODS
 
         public static List<Vector2Int> FindPath(Vector2Int start, Vector2Int end, IGridProvider grid)
         {
             if (grid == null) return null;
             if (start == end) return new List<Vector2Int>();
-
             if (!grid.IsValidCoordinate(end)) return null;
 
-            var openSet   = new HashSet<Vector2Int> { start };
+            var heap      = new List<HeapNode>();
+            var inOpenSet = new HashSet<Vector2Int> { start };
             var cameFrom  = new Dictionary<Vector2Int, Vector2Int>();
             var gScore    = new Dictionary<Vector2Int, int> { [start] = 0 };
-            var fScore    = new Dictionary<Vector2Int, int> { [start] = Heuristic(start, end) };
 
-            while (openSet.Count > 0)
+            HeapPush(heap, new HeapNode { FScore = Heuristic(start, end), Coord = start });
+
+            while (heap.Count > 0)
             {
-                Vector2Int current = PickLowestF(openSet, fScore);
+                HeapNode top     = HeapPop(heap);
+                Vector2Int current = top.Coord;
+
+                // Lazy deletion: this entry was superseded by a cheaper one.
+                if (!inOpenSet.Contains(current)) continue;
+                inOpenSet.Remove(current);
 
                 if (current == end)
                     return ReconstructPath(cameFrom, current);
-
-                openSet.Remove(current);
 
                 GridCell currentCell = grid.GetCell(current);
                 if (currentCell == null) continue;
@@ -79,15 +95,17 @@ namespace StrategyGame.Pathfinding
                             continue;
                     }
 
-                    int moveCost     = isDiagonal ? DiagonalCost : StraightCost;
-                    int tentativeG   = GetScore(gScore, current) + moveCost;
+                    int moveCost   = isDiagonal ? DiagonalCost : StraightCost;
+                    int tentativeG = GetScore(gScore, current) + moveCost;
 
                     if (tentativeG >= GetScore(gScore, nc)) continue;
 
                     cameFrom[nc] = current;
                     gScore[nc]   = tentativeG;
-                    fScore[nc]   = tentativeG + Heuristic(nc, end);
-                    openSet.Add(nc);
+
+                    int newF = tentativeG + Heuristic(nc, end);
+                    inOpenSet.Add(nc);
+                    HeapPush(heap, new HeapNode { FScore = newF, Coord = nc });
                 }
             }
 
@@ -97,6 +115,44 @@ namespace StrategyGame.Pathfinding
         #endregion
 
         #region PRIVATE_METHODS
+
+        private static void HeapPush(List<HeapNode> heap, HeapNode node)
+        {
+            heap.Add(node);
+            int i = heap.Count - 1;
+            while (i > 0)
+            {
+                int parent = (i - 1) >> 1;
+                if (heap[parent].FScore <= heap[i].FScore) break;
+                (heap[parent], heap[i]) = (heap[i], heap[parent]);
+                i = parent;
+            }
+        }
+
+        private static HeapNode HeapPop(List<HeapNode> heap)
+        {
+            HeapNode top  = heap[0];
+            int      last = heap.Count - 1;
+            heap[0] = heap[last];
+            heap.RemoveAt(last);
+
+            int i = 0;
+            while (true)
+            {
+                int left     = 2 * i + 1;
+                int right    = 2 * i + 2;
+                int smallest = i;
+
+                if (left  < heap.Count && heap[left].FScore  < heap[smallest].FScore) smallest = left;
+                if (right < heap.Count && heap[right].FScore < heap[smallest].FScore) smallest = right;
+
+                if (smallest == i) break;
+                (heap[i], heap[smallest]) = (heap[smallest], heap[i]);
+                i = smallest;
+            }
+
+            return top;
+        }
 
         private static List<Vector2Int> ReconstructPath(
             Dictionary<Vector2Int, Vector2Int> cameFrom, Vector2Int current)
@@ -111,22 +167,6 @@ namespace StrategyGame.Pathfinding
 
             path.Reverse();
             return path;
-        }
-
-        // Selects the node with the lowest f-score from the open set.
-        private static Vector2Int PickLowestF(
-            HashSet<Vector2Int> openSet, Dictionary<Vector2Int, int> fScore)
-        {
-            Vector2Int best  = default;
-            int        bestF = int.MaxValue;
-
-            foreach (Vector2Int coord in openSet)
-            {
-                int f = GetScore(fScore, coord);
-                if (f < bestF) { bestF = f; best = coord; }
-            }
-
-            return best;
         }
 
         // Returns the stored score or int.MaxValue/2 to avoid overflow when adding costs.

@@ -38,14 +38,14 @@ namespace StrategyGame.Units
 
         private void OnEnable()
         {
-            EventBus<UnitProductionRequestedEvent>.Subscribe(HandleUnitProductionRequested);
-            EventBus<UnitDestroyedEvent>.Subscribe(HandleUnitDestroyed);
+            EventBus.Subscribe<UnitProductionRequestedEvent>(HandleUnitProductionRequested);
+            EventBus.Subscribe<UnitDestroyedEvent>(HandleUnitDestroyed);
         }
 
         private void OnDisable()
         {
-            EventBus<UnitProductionRequestedEvent>.Unsubscribe(HandleUnitProductionRequested);
-            EventBus<UnitDestroyedEvent>.Unsubscribe(HandleUnitDestroyed);
+            EventBus.Unsubscribe<UnitProductionRequestedEvent>(HandleUnitProductionRequested);
+            EventBus.Unsubscribe<UnitDestroyedEvent>(HandleUnitDestroyed);
         }
 
         #endregion
@@ -149,7 +149,7 @@ namespace StrategyGame.Units
             // Register after Initialize() so _gridPosition is set inside the unit.
             // UnitSpawnSystem owns registry lifecycle (SRP); UnitBase.Initialize() does not.
             UnitRegistry.Register(unit, cell);
-            EventBus<UnitSpawnedEvent>.Publish(new UnitSpawnedEvent(go));
+            EventBus.Publish(new UnitSpawnedEvent(go));
         }
 
         #endregion

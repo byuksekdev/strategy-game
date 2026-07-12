@@ -23,6 +23,7 @@ namespace StrategyGame.Grid
         private Mesh _mesh;
         private MeshFilter _meshFilter;
         private MeshRenderer _meshRenderer;
+        private IGridProvider _grid;
 
         // -----------------------------------------------------------------------
 
@@ -34,18 +35,6 @@ namespace StrategyGame.Grid
             _meshRenderer = GetComponent<MeshRenderer>();
         }
 
-        private void Start()
-        {
-            if (GridManager.Instance == null)
-            {
-                Debug.LogError("[GridVisualizer] GridManager.Instance is null. " +
-                               "Make sure GridManager has a lower Script Execution Order.");
-                return;
-            }
-
-            BuildMesh(GridManager.Instance);
-        }
-
         private void OnDestroy()
         {
             if (_mesh != null) Destroy(_mesh);
@@ -55,13 +44,20 @@ namespace StrategyGame.Grid
 
         #region PUBLIC_METHODS
 
+        // Called by GameBootstrapper to provide the grid abstraction (DIP).
+        public void Inject(IGridProvider grid)
+        {
+            _grid = grid;
+            BuildMesh(_grid);
+        }
+
         // Call this to regenerate the mesh at runtime (e.g. after a grid resize).
         public void Rebuild()
         {
             if (_mesh != null) Destroy(_mesh);
 
-            if (GridManager.Instance != null)
-                BuildMesh(GridManager.Instance);
+            if (_grid != null)
+                BuildMesh(_grid);
         }
 
         #endregion

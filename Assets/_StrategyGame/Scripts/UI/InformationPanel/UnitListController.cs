@@ -71,7 +71,7 @@ namespace StrategyGame.UI.InformationPanel
         private void OnUnitItemClicked(EntityData data)
         {
             if (_currentProducer == null || data is not UnitData unitData) return;
-            EventBus<UnitProductionRequestedEvent>.Publish(new UnitProductionRequestedEvent(unitData, _currentProducer));
+            EventBus.Publish(new UnitProductionRequestedEvent(unitData, _currentProducer));
         }
 
         private void ClearItems()

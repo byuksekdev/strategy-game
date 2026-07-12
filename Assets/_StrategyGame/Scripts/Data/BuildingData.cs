@@ -7,16 +7,11 @@ namespace StrategyGame.Data
     public class BuildingData : EntityData
     {
         //-------Public Variables-------//
-        public BuildingType BuildingType => _buildingType;
         public int MaxHP => _maxHP;
-
         public Vector2Int Size => _size;
         public GameObject Prefab => _prefab;
 
         //------Serialized Fields-------//
-        [Header("Type")]
-        [SerializeField] private BuildingType _buildingType;
-
         [Header("Stats")]
         [SerializeField] private int _maxHP = 100;
 

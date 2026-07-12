@@ -58,7 +58,7 @@ namespace StrategyGame.UI.ProductionMenu
         // both the placement system and the information panel react to it.
         private void OnBuildingItemClicked(BuildingData data)
         {
-            EventBus<BuildingProductionRequestedEvent>.Publish(new BuildingProductionRequestedEvent(data));
+            EventBus.Publish(new BuildingProductionRequestedEvent(data));
         }
 
         #endregion

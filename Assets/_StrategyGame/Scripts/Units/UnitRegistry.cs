@@ -8,11 +8,18 @@ namespace StrategyGame.Units
     // to locate units without relying on Physics2D or GridCell occupancy.
     //
     // Thread-safety: not required — Unity is single-threaded.
-    // Lifecycle: call Clear() on scene unload (e.g. from a GameBootstrap).
+    // Lifecycle: automatically cleared on domain reload via [RuntimeInitializeOnLoadMethod].
+    //            Also cleared by GameBootstrapper.OnDestroy for runtime scene reloads.
     public static class UnitRegistry
     {
         //------Private Variables-------//
         private static readonly Dictionary<Vector2Int, UnitBase> _unitsByCell = new();
+
+        // Runs before any scene loads AND whenever the domain reloads (e.g. entering Play Mode
+        // with "Enter Play Mode Options / Reload Domain" disabled in Project Settings).
+        // This guarantees a clean slate on every play session without coupling callers to Clear().
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetOnDomainReload() => _unitsByCell.Clear();
 
         #region PUBLIC_METHODS
 
