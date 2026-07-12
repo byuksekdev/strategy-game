@@ -7,7 +7,13 @@ using StrategyGame.Grid;
 
 namespace StrategyGame.Units
 {
-    // Listens to UnitProductionRequestedEvent and spawns the correct unit prefab.
+    // Manages the full unit lifecycle: spawn → UnitRegistry registration → destruction → unregistration.
+    //
+    // SRP: UnitSpawnSystem is the single owner of UnitRegistry write operations for lifecycle events.
+    //   • SpawnUnit()          → unit.Initialize() then UnitRegistry.Register()
+    //   • HandleUnitDestroyed  → UnitRegistry.Unregister() on UnitDestroyedEvent
+    //   Mid-movement registry updates (register/unregister per step) remain in MoveCoroutine
+    //   because they are inherently coupled to movement state.
     //
     // Spawn cell selection (BFS):
     //   1. Start from the cell closest to the producer's SpawnWorldPosition.
@@ -17,8 +23,6 @@ namespace StrategyGame.Units
     // IGridProvider is injected via Inject() (DIP). UnitSpawnSystem only reads the grid
     // (BFS search, coordinate conversion), so IGridProvider is sufficient (ISP).
     // GameBootstrapper is the sole caller of Inject() — it is the composition root.
-    //
-    // This component should live on a persistent scene GameObject (e.g. "Systems").
     public class UnitSpawnSystem : MonoBehaviour
     {
         //-------Public Variables-------//
@@ -35,11 +39,13 @@ namespace StrategyGame.Units
         private void OnEnable()
         {
             EventBus<UnitProductionRequestedEvent>.Subscribe(HandleUnitProductionRequested);
+            EventBus<UnitDestroyedEvent>.Subscribe(HandleUnitDestroyed);
         }
 
         private void OnDisable()
         {
             EventBus<UnitProductionRequestedEvent>.Unsubscribe(HandleUnitProductionRequested);
+            EventBus<UnitDestroyedEvent>.Unsubscribe(HandleUnitDestroyed);
         }
 
         #endregion
@@ -55,6 +61,15 @@ namespace StrategyGame.Units
         #endregion
 
         #region PRIVATE_METHODS
+
+        // Unregisters the unit from the registry when it is destroyed.
+        // UnitDestroyedEvent carries the GridPosition so UnitBase.Die() does not need
+        // a direct UnitRegistry dependency (SRP). EventBus is synchronous, so this runs
+        // before LeanPool.Despawn in the same call stack.
+        private static void HandleUnitDestroyed(UnitDestroyedEvent e)
+        {
+            UnitRegistry.Unregister(e.GridPosition);
+        }
 
         private void HandleUnitProductionRequested(UnitProductionRequestedEvent e)
         {
@@ -131,6 +146,9 @@ namespace StrategyGame.Units
             }
 
             unit.Initialize(unitData, cell, grid);
+            // Register after Initialize() so _gridPosition is set inside the unit.
+            // UnitSpawnSystem owns registry lifecycle (SRP); UnitBase.Initialize() does not.
+            UnitRegistry.Register(unit, cell);
             EventBus<UnitSpawnedEvent>.Publish(new UnitSpawnedEvent(go));
         }
 

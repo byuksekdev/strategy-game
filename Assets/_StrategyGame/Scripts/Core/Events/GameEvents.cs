@@ -20,10 +20,20 @@ namespace StrategyGame.Core
     }
 
     // Raised just before a building is despawned (HP == 0 or manually deleted).
+    // Carries grid data so that GridManager can free the occupied area without BuildingBase
+    // needing to know about or call into the grid system directly (SRP).
     public readonly struct BuildingDestroyedEvent
     {
         public readonly GameObject Building;
-        public BuildingDestroyedEvent(GameObject building) => Building = building;
+        public readonly Vector2Int GridOrigin;
+        public readonly Vector2Int GridSize;
+
+        public BuildingDestroyedEvent(GameObject building, Vector2Int gridOrigin, Vector2Int gridSize)
+        {
+            Building   = building;
+            GridOrigin = gridOrigin;
+            GridSize   = gridSize;
+        }
     }
 
     // ── Unit ───────────────────────────────────────────────────────────────────
@@ -35,10 +45,18 @@ namespace StrategyGame.Core
     }
 
     // Raised just before a unit is despawned (HP == 0).
+    // Carries the unit's last grid position so that UnitSpawnSystem can unregister it
+    // from UnitRegistry without UnitBase needing to call into the registry directly (SRP).
     public readonly struct UnitDestroyedEvent
     {
         public readonly GameObject Unit;
-        public UnitDestroyedEvent(GameObject unit) => Unit = unit;
+        public readonly Vector2Int GridPosition;
+
+        public UnitDestroyedEvent(GameObject unit, Vector2Int gridPosition)
+        {
+            Unit         = unit;
+            GridPosition = gridPosition;
+        }
     }
 
     // ── Production ─────────────────────────────────────────────────────────────

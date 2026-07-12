@@ -12,11 +12,18 @@ using StrategyGame.Pathfinding;
 namespace StrategyGame.Units
 {
     // Abstract base for all unit types (Soldier1, Soldier2, Soldier3).
-    // Handles HP, grid registration, A* movement (Coroutine), selection callbacks,
-    // and continuous melee attack loops (move → attack → cooldown → repeat until dead).
+    // Handles HP, A* movement (Coroutine), selection callbacks, and melee attack loops.
     //
-    // Concrete subclasses override BaseAttackDamage / BaseAttackCooldown for defaults.
-    // UnitData values take precedence when the unit is initialized with data.
+    // Single Responsibility breakdown — each concern is owned by the right system:
+    //   HP management      : this class (IDamageable contract)
+    //   Selection visuals  : SelectionHighlight component (delegated via composition)
+    //   UnitRegistry (init): UnitSpawnSystem.SpawnUnit() registers the unit after Initialize()
+    //   UnitRegistry (death): UnitSpawnSystem subscribes to UnitDestroyedEvent and unregisters (SRP)
+    //   UnitRegistry (move): MoveCoroutine updates the registry mid-step (inherently movement-coupled)
+    //
+    // Die() is a thin coordinator: it cancels active coroutines, publishes UnitDestroyedEvent
+    // (carrying GridPosition so UnitSpawnSystem can unregister), and despawns.
+    // UnitBase never calls UnitRegistry.Register/Unregister directly except during movement.
     //
     // IGridProvider is injected via Initialize() (method injection / DIP).
     // UnitBase only performs read operations on the grid (pathfinding, coordinate conversion),
@@ -85,6 +92,7 @@ namespace StrategyGame.Units
 
         // Called by UnitSpawnSystem after LeanPool.Spawn to inject runtime data and grid provider.
         // gridProvider gives read-only grid access for coordinate conversion and pathfinding.
+        // UnitRegistry.Register is NOT called here — UnitSpawnSystem owns that responsibility (SRP).
         public void Initialize(UnitData data, Vector2Int startCell, IGridProvider gridProvider)
         {
             _gridProvider = gridProvider;
@@ -93,7 +101,6 @@ namespace StrategyGame.Units
             _gridPosition = startCell;
 
             OnHealthChanged?.Invoke(_currentHP, MaxHP);
-            UnitRegistry.Register(this, startCell);
 
             Vector3 worldPos = _gridProvider != null
                 ? _gridProvider.GridToWorld(startCell)
@@ -127,19 +134,20 @@ namespace StrategyGame.Units
             if (_currentHP <= 0) Die();
         }
 
+        // Cancels active coroutines, publishes UnitDestroyedEvent (carrying GridPosition so that
+        // UnitSpawnSystem can unregister from UnitRegistry — SRP), then returns to the pool.
         public virtual void Die()
         {
             CancelActiveAction();
-            UnitRegistry.Unregister(_gridPosition);
-
-            EventBus<UnitDestroyedEvent>.Publish(new UnitDestroyedEvent(gameObject));
+            EventBus<UnitDestroyedEvent>.Publish(new UnitDestroyedEvent(gameObject, _gridPosition));
             LeanPool.Despawn(gameObject);
         }
 
+        // Updates own visual state only. SelectionController is responsible for
+        // publishing SelectionChangedEvent so that UI reacts (MVC: Model ≠ Controller).
         public virtual void OnSelected()
         {
             _highlight?.Highlight();
-            EventBus<SelectionChangedEvent>.Publish(new SelectionChangedEvent(this));
         }
 
         public virtual void OnDeselected()

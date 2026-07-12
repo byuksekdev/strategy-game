@@ -12,7 +12,7 @@ namespace StrategyGame.Core
     //
     // Left click (not over UI, not in placement mode):
     //   → WorldToGrid → check GridCell.Occupant (buildings) OR UnitRegistry (units)
-    //       found → OnSelected() + EventBus<SelectionChangedEvent>.Publish(entity)
+    //       found → entity.OnSelected() [visual only] + EventBus<SelectionChangedEvent>.Publish(entity)
     //       empty → ClearSelection() + EventBus<SelectionChangedEvent>.Publish(null)
     //
     // Right click (unit selected, not over UI):
@@ -208,11 +208,13 @@ namespace StrategyGame.Core
         }
 
         // Selects the given selectable, deselecting the previous one.
+        // Controller owns the SelectionChangedEvent publish (MVC: Controller ≠ Model).
         private void Select(ISelectable selectable)
         {
             _currentSelected?.OnDeselected();
             _currentSelected = selectable;
-            _currentSelected.OnSelected(); // fires EventBus<SelectionChangedEvent>.Publish internally
+            _currentSelected.OnSelected();
+            EventBus<SelectionChangedEvent>.Publish(new SelectionChangedEvent(selectable));
             _lastHoverCell = new Vector2Int(int.MinValue, int.MinValue);
         }
 

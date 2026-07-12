@@ -1,9 +1,15 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using StrategyGame.Core;
 
 namespace StrategyGame.Grid
 {
+    // GridManager owns all grid state and is the single place responsible for freeing
+    // occupied areas when buildings are destroyed (SRP).
+    // It subscribes to BuildingDestroyedEvent so that BuildingBase never needs a direct
+    // reference to the grid write interface (IGridOccupancyManager) — the event carries
+    // the necessary grid data (GridOrigin, GridSize) instead.
     public class GridManager : MonoBehaviour, IGridService
     {
         //-------Public Variables-------//
@@ -30,6 +36,16 @@ namespace StrategyGame.Grid
             }
             Instance = this;
             InitializeGrid();
+        }
+
+        private void OnEnable()
+        {
+            EventBus<BuildingDestroyedEvent>.Subscribe(HandleBuildingDestroyed);
+        }
+
+        private void OnDisable()
+        {
+            EventBus<BuildingDestroyedEvent>.Unsubscribe(HandleBuildingDestroyed);
         }
 
         private void OnDestroy()
@@ -132,6 +148,14 @@ namespace StrategyGame.Grid
         #endregion
 
         #region PRIVATE_METHODS
+
+        // Frees the grid area when a building is destroyed.
+        // EventBus<BuildingDestroyedEvent> is synchronous, so FreeArea runs before LeanPool.Despawn.
+        private void HandleBuildingDestroyed(BuildingDestroyedEvent e)
+        {
+            if (e.GridSize != Vector2Int.zero)
+                FreeArea(e.GridOrigin, e.GridSize);
+        }
 
         private void InitializeGrid()
         {

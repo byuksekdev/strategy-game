@@ -44,16 +44,6 @@ namespace StrategyGame.Buildings
 
         #region PUBLIC_METHODS
 
-        public override void OnSelected()
-        {
-            base.OnSelected();
-        }
-
-        public override void OnDeselected()
-        {
-            base.OnDeselected();
-        }
-
         #endregion
 
         #region PRIVATE_METHODS

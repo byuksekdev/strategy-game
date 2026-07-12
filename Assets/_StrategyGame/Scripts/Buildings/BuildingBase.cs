@@ -8,12 +8,19 @@ using StrategyGame.Grid;
 namespace StrategyGame.Buildings
 {
     // Abstract base for all buildings (Barracks, PowerPlant, etc.).
-    // Handles HP, selection callbacks, and grid cleanup on destruction.
-    // Concrete buildings inherit from this and override OnInitialized() for custom setup.
     //
-    // Grid dependencies are injected via Initialize() (method injection / DIP):
-    //   _occupancyManager : IGridOccupancyManager — only FreeArea is needed here (ISP).
-    //   GridProvider      : IGridProvider          — exposed to subclasses that need read access.
+    // Single Responsibility breakdown — each concern is owned by the right system:
+    //   HP management    : this class (IDamageable contract)
+    //   Selection visuals: SelectionHighlight component (delegated via composition)
+    //   Grid cleanup     : GridManager subscribes to BuildingDestroyedEvent (event-driven, SRP)
+    //   Object pooling   : LeanPool.Despawn — lifecycle infrastructure call in Die()
+    //
+    // Die() is now a thin coordinator: it publishes BuildingDestroyedEvent (which carries
+    // the grid data GridManager needs) and returns the object to the pool.
+    // BuildingBase no longer stores or calls into IGridOccupancyManager directly (DIP + SRP).
+    //
+    // IGridProvider is injected via Initialize() so subclasses that need read-only grid
+    // access (e.g. Barracks resolving its spawn point) can use GridProvider (ISP).
     public abstract class BuildingBase : MonoBehaviour, IDamageable, ISelectable, IProducible, IInfoPanelProvider
     {
         //-------Public Variables-------//
@@ -47,11 +54,8 @@ namespace StrategyGame.Buildings
         private Vector2Int _gridOrigin;
         private int _currentHP;
 
-        // ISP: Die() only needs to free cells — no read operations required.
-        private IGridOccupancyManager _occupancyManager;
-
-        // Exposed to subclasses that need read-only grid access (e.g. Barracks spawn point).
-        // Typed as IGridProvider so subclasses cannot accidentally call write operations.
+        // Read-only grid access for subclasses (ISP: no write operations needed by BuildingBase).
+        // Grid cleanup on death is delegated to GridManager via BuildingDestroyedEvent (SRP).
         protected IGridProvider GridProvider { get; private set; }
 
         private SelectionHighlight _highlight;
@@ -67,16 +71,12 @@ namespace StrategyGame.Buildings
 
         #region PUBLIC_METHODS
 
-        // Called by BuildingFactory after instantiation to inject runtime data, grid position,
-        // and grid service dependencies.
-        //
-        // gridService is split internally into two narrowed interfaces (ISP):
-        //   IGridOccupancyManager → stored in _occupancyManager for Die()
-        //   IGridProvider         → stored in GridProvider for subclass read access
-        public void Initialize(BuildingData data, Vector2Int gridOrigin, IGridService gridService)
+        // Called by BuildingFactory after instantiation to inject runtime data and grid position.
+        // IGridProvider is sufficient here — grid cleanup is now handled by GridManager via events,
+        // so BuildingBase no longer needs write access to the grid (ISP + SRP).
+        public void Initialize(BuildingData data, Vector2Int gridOrigin, IGridProvider gridProvider)
         {
-            _occupancyManager = gridService;
-            GridProvider = gridService;
+            GridProvider = gridProvider;
             _buildingData = data;
             _gridOrigin = gridOrigin;
             _currentHP = data.MaxHP;
@@ -94,20 +94,21 @@ namespace StrategyGame.Buildings
             if (IsDead) Die();
         }
 
+        // Publishes BuildingDestroyedEvent (which carries grid data for GridManager to free the area)
+        // then returns the object to the pool. BuildingBase has no direct grid write dependency.
         public virtual void Die()
         {
-            if (_buildingData != null && _occupancyManager != null)
-                _occupancyManager.FreeArea(_gridOrigin, _buildingData.Size);
+            EventBus<BuildingDestroyedEvent>.Publish(
+                new BuildingDestroyedEvent(gameObject, _gridOrigin, _buildingData?.Size ?? Vector2Int.zero));
 
-            EventBus<BuildingDestroyedEvent>.Publish(new BuildingDestroyedEvent(gameObject));
             LeanPool.Despawn(gameObject);
         }
 
-        // Broadcasts the selection so the UI (Info Panel) can react.
+        // Updates own visual state only. SelectionController is responsible for
+        // publishing SelectionChangedEvent so that UI reacts (MVC: Model ≠ Controller).
         public virtual void OnSelected()
         {
             _highlight?.Highlight();
-            EventBus<SelectionChangedEvent>.Publish(new SelectionChangedEvent(this));
         }
 
         // Visual deselection is delegated to SelectionHighlight; null-broadcast is handled by SelectionController.
