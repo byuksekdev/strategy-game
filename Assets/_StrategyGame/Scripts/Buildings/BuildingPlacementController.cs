@@ -4,6 +4,7 @@ using UnityEngine.EventSystems;
 using StrategyGame.Core;
 using StrategyGame.Data;
 using StrategyGame.Grid;
+using StrategyGame.Units;
 
 namespace StrategyGame.Buildings
 {
@@ -154,7 +155,8 @@ namespace StrategyGame.Buildings
                 mouseCell.y - _pendingData.Size.y / 2
             );
 
-            _isCurrentValid = _grid.IsAreaFree(_currentOrigin, _pendingData.Size);
+            _isCurrentValid = _grid.IsAreaFree(_currentOrigin, _pendingData.Size)
+                           && !IsAreaOccupiedByUnit(_currentOrigin, _pendingData.Size);
 
             Vector3 areaCenter = _grid.GetAreaWorldCenter(_currentOrigin, _pendingData.Size);
             if (_ghostObject != null)
@@ -245,6 +247,16 @@ namespace StrategyGame.Buildings
             Vector3 screen = Input.mousePosition;
             screen.z = Mathf.Abs(_camera.transform.position.z);
             return _camera.ScreenToWorldPoint(screen);
+        }
+
+        // Returns true when any cell in the area is occupied by a unit in UnitRegistry.
+        private static bool IsAreaOccupiedByUnit(Vector2Int origin, Vector2Int size)
+        {
+            for (int x = origin.x; x < origin.x + size.x; x++)
+                for (int y = origin.y; y < origin.y + size.y; y++)
+                    if (UnitRegistry.IsCellOccupied(new Vector2Int(x, y)))
+                        return true;
+            return false;
         }
 
         // Checks if the mouse is over the UI; prevents UI clicks from registering on the grid.

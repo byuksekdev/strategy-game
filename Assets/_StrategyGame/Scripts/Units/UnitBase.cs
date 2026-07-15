@@ -175,7 +175,9 @@ namespace StrategyGame.Units
         // Walks the unit along an A* path to the target cell, one cell per step.
         // _gridPosition stays at the COMPLETED cell until the lerp finishes so that
         // cancelling mid-step restores the unit to its last known grid cell correctly.
-        // Recalculates the path dynamically if a cell becomes occupied mid-movement.
+        // Recalculates the path dynamically if an intermediate cell becomes blocked.
+        // If the final destination itself becomes blocked (another unit arrived first or
+        // a building was placed there), the unit stops at its last completed grid cell.
         private IEnumerator MoveCoroutine(Vector2Int targetCell)
         {
             IGridProvider grid = _gridProvider;
@@ -187,12 +189,30 @@ namespace StrategyGame.Units
             int index = 0;
             while (index < path.Count)
             {
-                Vector2Int nextCell = path[index];
+                Vector2Int nextCell     = path[index];
+                GridCell   nextGridCell = grid.GetCell(nextCell);
 
-                // If the next cell was claimed by another unit since path was computed,
-                // recalculate from the current grid position rather than walking into a conflict.
-                if (UnitRegistry.IsCellOccupied(nextCell) && nextCell != targetCell)
+                // A cell is blocked if another unit has claimed it or a building makes it non-walkable.
+                bool cellBlocked = UnitRegistry.IsCellOccupied(nextCell)
+                                   || (nextGridCell != null && !nextGridCell.IsWalkable);
+
+                if (cellBlocked)
                 {
+                    if (nextCell == targetCell)
+                    {
+                        // Final destination is now blocked (another unit arrived first or a building
+                        // was placed there). Stay at the last completed grid cell and stop.
+                        yield break;
+                    }
+
+                    // An intermediate cell is blocked — check first whether the target itself has
+                    // become unreachable to avoid a needless A* call.
+                    GridCell targetGridCell = grid.GetCell(targetCell);
+                    bool targetBlocked = UnitRegistry.IsCellOccupied(targetCell)
+                                        || (targetGridCell != null && !targetGridCell.IsWalkable);
+                    if (targetBlocked) yield break;
+
+                    // Recalculate path around the blocked intermediate cell.
                     path = AStarPathfinder.FindPath(_gridPosition, targetCell, grid);
                     if (path == null || path.Count == 0) yield break;
                     index = 0;

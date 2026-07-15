@@ -59,6 +59,26 @@ PrefabInstance:
       propertyPath: m_Name
       value: Building_PowerPlant
       objectReference: {fileID: 0}
+    - target: {fileID: 7633169018431392771, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.75
+      objectReference: {fileID: 0}
+    - target: {fileID: 7633169018431392771, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.75
+      objectReference: {fileID: 0}
+    - target: {fileID: 7633169018431392771, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.75
+      objectReference: {fileID: 0}
+    - target: {fileID: 7633169018431392771, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.58
+      objectReference: {fileID: 0}
+    - target: {fileID: 7633169018431392771, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8356493535606086097, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
       propertyPath: m_LocalScale.x
       value: 0.47
@@ -93,11 +113,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
---- !u!212 &414997383981356356 stripped
-SpriteRenderer:
-  m_CorrespondingSourceObject: {fileID: 5081002128781738919, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
-  m_PrefabInstance: {fileID: 4846160618461779683}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2216546673857411592 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6738445095382478059, guid: 87ac1ed47108042f09b3d58f0734c31e, type: 3}
@@ -115,5 +130,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7db0be90feb7543828eb2bbe1c8f18fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _selectedTint: {r: 1, g: 0.85, b: 0.25, a: 1}
-  _outlineSpriteRenderer: {fileID: 414997383981356356}
