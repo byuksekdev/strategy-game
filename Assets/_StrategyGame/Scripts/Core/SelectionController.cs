@@ -202,6 +202,8 @@ namespace StrategyGame.Core
         }
 
         // Redraws path preview when a unit is selected and the hovered cell changes.
+        // When hovering over a building the preview reflects the actual attack destination
+        // (closest free adjacent cell to the unit) rather than the raw hovered cell.
         private void UpdatePathPreview()
         {
             UnitBase actor = SelectedUnit;
@@ -226,12 +228,78 @@ namespace StrategyGame.Core
                 return;
             }
 
-            List<Vector2Int> path = AStarPathfinder.FindPath(actor.GridPosition, hoverCell, _grid);
+            GridCell hoverGridCell = _grid.GetCell(hoverCell);
+            if (hoverGridCell == null) { _pathPreviewRenderer?.Clear(); return; }
+
+            Vector2Int previewTarget;
+
+            if (hoverGridCell.IsOccupied)
+            {
+                // Building hovered: mirror the attack logic — find the closest free adjacent
+                // cell so the preview matches exactly where the unit will walk to.
+                List<Vector2Int> footprint = GetBuildingFootprint(hoverGridCell.Occupant);
+                if (footprint == null) { _pathPreviewRenderer?.Clear(); return; }
+
+                Vector2Int? closest = FindClosestFreeAdjacentCell(footprint, actor.GridPosition);
+                if (!closest.HasValue) { _pathPreviewRenderer?.Clear(); return; }
+
+                previewTarget = closest.Value;
+            }
+            else if (!hoverGridCell.IsWalkable)
+            {
+                _pathPreviewRenderer?.Clear();
+                return;
+            }
+            else
+            {
+                previewTarget = hoverCell;
+            }
+
+            List<Vector2Int> path = AStarPathfinder.FindPath(actor.GridPosition, previewTarget, _grid);
 
             if (path == null || path.Count == 0)
                 _pathPreviewRenderer?.Clear();
             else
                 _pathPreviewRenderer?.ShowPath(path, _grid);
+        }
+
+        // Collects all free walkable cells adjacent to any cell in the footprint and
+        // returns the one with the smallest Octile distance to the unit's current position.
+        private Vector2Int? FindClosestFreeAdjacentCell(List<Vector2Int> footprint, Vector2Int unitPosition)
+        {
+            var visited    = new HashSet<Vector2Int>();
+            var candidates = new List<Vector2Int>();
+
+            foreach (Vector2Int fc in footprint)
+            {
+                GridCell gridCell = _grid.GetCell(fc);
+                if (gridCell == null) continue;
+
+                foreach (GridCell neighbour in _grid.GetNeighbors(gridCell))
+                {
+                    if (!visited.Add(neighbour.Coordinate)) continue;
+                    if (neighbour.IsWalkable && !UnitRegistry.IsCellOccupied(neighbour.Coordinate))
+                        candidates.Add(neighbour.Coordinate);
+                }
+            }
+
+            if (candidates.Count == 0) return null;
+
+            Vector2Int best     = candidates[0];
+            int        bestDist = OctileDist(unitPosition, best);
+            for (int i = 1; i < candidates.Count; i++)
+            {
+                int d = OctileDist(unitPosition, candidates[i]);
+                if (d < bestDist) { bestDist = d; best = candidates[i]; }
+            }
+            return best;
+        }
+
+        private static int OctileDist(Vector2Int a, Vector2Int b)
+        {
+            int dx = Mathf.Abs(a.x - b.x);
+            int dy = Mathf.Abs(a.y - b.y);
+            return 10 * Mathf.Max(dx, dy) + 4 * Mathf.Min(dx, dy);
         }
 
         // Selects the given selectable, deselecting the previous one.

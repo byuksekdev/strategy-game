@@ -238,7 +238,8 @@ namespace StrategyGame.Units
             // Search all cells in the target's footprint for a free adjacent cell.
             // This correctly handles multi-cell buildings: an interior cell of a 4×4 Barracks
             // has no walkable direct neighbours, but the building's border cells do.
-            Vector2Int? adjacentCell = FindAdjacentFreeCell(targetCells, grid);
+            // _gridPosition is passed so the closest candidate to the unit is preferred.
+            Vector2Int? adjacentCell = FindAdjacentFreeCell(targetCells, grid, _gridPosition);
             if (!adjacentCell.HasValue) yield break;
 
             // Move to the adjacent cell (store handle so CancelActiveAction can stop it).
@@ -263,13 +264,17 @@ namespace StrategyGame.Units
             _activeCoroutine = null;
         }
 
-        // Searches the cardinal neighbours of EVERY cell in the target's footprint and
-        // returns the first that is both walkable and free of other units.
+        // Searches the cardinal neighbours of EVERY cell in the target's footprint,
+        // collects all free walkable candidates, then returns the one closest to the
+        // unit's current grid position (Octile distance). This prevents the unit from
+        // looping around a building when a nearer free cell exists on the same side.
         // A visited set prevents checking the same neighbour cell twice when footprint
         // cells share edges (common in multi-cell buildings).
-        private static Vector2Int? FindAdjacentFreeCell(IReadOnlyList<Vector2Int> targetCells, IGridProvider grid)
+        private static Vector2Int? FindAdjacentFreeCell(
+            IReadOnlyList<Vector2Int> targetCells, IGridProvider grid, Vector2Int unitPosition)
         {
-            var visited = new HashSet<Vector2Int>();
+            var visited    = new HashSet<Vector2Int>();
+            var candidates = new List<Vector2Int>();
 
             foreach (Vector2Int targetCell in targetCells)
             {
@@ -281,11 +286,29 @@ namespace StrategyGame.Units
                     if (!visited.Add(neighbour.Coordinate)) continue;
 
                     if (neighbour.IsWalkable && !UnitRegistry.IsCellOccupied(neighbour.Coordinate))
-                        return neighbour.Coordinate;
+                        candidates.Add(neighbour.Coordinate);
                 }
             }
 
-            return null;
+            if (candidates.Count == 0) return null;
+
+            // Pick the candidate with the smallest Octile distance to the unit.
+            Vector2Int best     = candidates[0];
+            int        bestDist = OctileDist(unitPosition, best);
+            for (int i = 1; i < candidates.Count; i++)
+            {
+                int d = OctileDist(unitPosition, candidates[i]);
+                if (d < bestDist) { bestDist = d; best = candidates[i]; }
+            }
+            return best;
+        }
+
+        // Octile distance scaled by 10 (matches A* heuristic units).
+        private static int OctileDist(Vector2Int a, Vector2Int b)
+        {
+            int dx = Mathf.Abs(a.x - b.x);
+            int dy = Mathf.Abs(a.y - b.y);
+            return 10 * Mathf.Max(dx, dy) + 4 * Mathf.Min(dx, dy);
         }
 
         // Returns true when the target is a live (active) MonoBehaviour.
