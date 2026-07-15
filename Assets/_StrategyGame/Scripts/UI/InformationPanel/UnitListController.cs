@@ -56,6 +56,23 @@ namespace StrategyGame.UI.InformationPanel
             _container.SetActive(true);
         }
 
+        // Shows the unit list in read-only preview mode (building not yet placed).
+        // Items are non-interactable; clicking does nothing.
+        public void ShowForPreview(UnitData[] units)
+        {
+            _currentProducer = null;
+            ClearItems();
+
+            foreach (UnitData unitData in units)
+            {
+                GameObject go = LeanPool.Spawn(_unitItemPrefab, _itemParent);
+                go.GetComponent<ProductionItemView>().Bind(unitData, null, interactable: false);
+                _spawnedItems.Add(go);
+            }
+
+            _container.SetActive(true);
+        }
+
         // Clears the list and hides the container.
         public void Hide()
         {

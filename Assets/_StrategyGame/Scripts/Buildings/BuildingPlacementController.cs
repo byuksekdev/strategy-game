@@ -127,13 +127,15 @@ namespace StrategyGame.Buildings
         }
 
         // Starts the placement mode with the given BuildingData.
-        // If there is an active placement, it is cancelled first.
+        // If there is an active placement, ghost/highlight are cleared silently so the
+        // incoming HandleMenuSelection can open the panel for the new building without
+        // PlacementModeExitedEvent racing in and closing it immediately.
         private void StartPlacement(BuildingData data)
         {
             if (data == null) return;
 
             if (_isPlacing)
-                ExitPlacementMode();
+                ExitPlacementMode(silent: true);
 
             _pendingData = data;
             _isPlacing = true;
@@ -175,8 +177,10 @@ namespace StrategyGame.Buildings
                 ExitPlacementMode();
         }
 
-        // Clears all placement state and publishes PlacementModeExitedEvent.
-        private void ExitPlacementMode()
+        // Clears all placement state. Publishes PlacementModeExitedEvent unless silent is true.
+        // silent=true is used when switching directly from one building to another so the
+        // incoming BuildingProductionRequestedEvent can reopen the panel without interference.
+        private void ExitPlacementMode(bool silent = false)
         {
             _isPlacing = false;
             _pendingData = null;
@@ -184,7 +188,8 @@ namespace StrategyGame.Buildings
             DestroyGhost();
             _highlighter?.Hide();
 
-            EventBus.Publish(new PlacementModeExitedEvent());
+            if (!silent)
+                EventBus.Publish(new PlacementModeExitedEvent());
         }
 
         // Creates the building ghost: spawns _ghostPrefab via LeanPool, tries to use the

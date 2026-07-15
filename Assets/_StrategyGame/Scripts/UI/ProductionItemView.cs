@@ -17,9 +17,9 @@ namespace StrategyGame.UI
         //------Serialized Fields-------//
         [SerializeField] private Image _icon;
         [SerializeField] private TextMeshProUGUI _nameText;
+        [SerializeField] private Button _button;
 
         //------Private Variables-------//
-        private Button _button;
         private EntityData _data;
         private Action<EntityData> _onClick;
 
@@ -41,8 +41,9 @@ namespace StrategyGame.UI
         #region PUBLIC_METHODS
 
         // Fills the visual fields and the click callback.
+        // Pass interactable: false for read-only preview (e.g. unplaced building info).
         // Should be called immediately after spawning.
-        public void Bind(EntityData data, Action<EntityData> onClick)
+        public void Bind(EntityData data, Action<EntityData> onClick, bool interactable = true)
         {
             _data = data;
             _onClick = onClick;
@@ -52,6 +53,8 @@ namespace StrategyGame.UI
             bool hasIcon = data.Icon != null;
             _icon.sprite = data.Icon;
             _icon.enabled = hasIcon;
+
+            _button.interactable = interactable;
         }
 
         #endregion

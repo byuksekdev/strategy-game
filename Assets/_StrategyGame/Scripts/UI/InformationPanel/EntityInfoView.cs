@@ -34,31 +34,19 @@ namespace StrategyGame.UI.InformationPanel
 
         #region PUBLIC_METHODS
 
-        // Fills the view with static data and hides the HP row.
+        // Fills the view with static data only (preview mode — no live entity).
+        // Shows max HP from BuildingData if available ("HP: 100").
         public void Bind(EntityData data)
         {
-            Bind(data, null);
+            BindCore(data);
+            RefreshHPStatic(data as BuildingData);
         }
 
         // Fills the view with static data and runtime HP information.
         public void Bind(EntityData data, IDamageable damageable)
         {
-            if (data == null)
-            {
-                Clear();
-                return;
-            }
-
-            _nameText.SetText(data.DisplayName);
-
-            bool hasIcon = data.Icon != null;
-            _iconImage.sprite = data.Icon;
-            _iconImage.enabled = hasIcon;
-
+            BindCore(data);
             RefreshHP(damageable);
-            RefreshDimensions(data as BuildingData);
-
-            gameObject.SetActive(true);
         }
 
         // Updates the live HP information (without a Bind() call).
@@ -74,7 +62,7 @@ namespace StrategyGame.UI.InformationPanel
 
             _hpRow.SetActive(true);
             if (_hpText != null)
-                _hpText.SetText($"HP: {damageable.CurrentHP} / {damageable.MaxHP}");
+                _hpText.SetText($"Current HP: {damageable.CurrentHP} / {damageable.MaxHP}");
         }
 
         // Clears the view and hides it.
@@ -96,6 +84,41 @@ namespace StrategyGame.UI.InformationPanel
         #endregion
 
         #region PRIVATE_METHODS
+
+        private void BindCore(EntityData data)
+        {
+            if (data == null)
+            {
+                Clear();
+                return;
+            }
+
+            _nameText.SetText(data.DisplayName);
+
+            bool hasIcon = data.Icon != null;
+            _iconImage.sprite = data.Icon;
+            _iconImage.enabled = hasIcon;
+
+            RefreshDimensions(data as BuildingData);
+
+            gameObject.SetActive(true);
+        }
+
+        // Shows static max HP from BuildingData in preview (menu) mode: "HP: 100".
+        private void RefreshHPStatic(BuildingData buildingData)
+        {
+            if (_hpRow == null) return;
+
+            if (buildingData == null)
+            {
+                _hpRow.SetActive(false);
+                return;
+            }
+
+            _hpRow.SetActive(true);
+            if (_hpText != null)
+                _hpText.SetText($"HP: {buildingData.MaxHP}");
+        }
 
         // Shows or hides the dimension row based on whether the entity is a building.
         // Only BuildingData carries a Size; units and unplaced items hide this row.

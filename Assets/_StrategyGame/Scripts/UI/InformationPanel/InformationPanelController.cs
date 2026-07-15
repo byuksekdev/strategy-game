@@ -100,14 +100,20 @@ namespace StrategyGame.UI.InformationPanel
         #region PRIVATE_METHODS
 
         // Building card clicked from the left production menu.
-        // Building not yet placed → no delete button, no production list, no HP.
+        // Building not yet placed → no delete button, HP shows max only, unit list is read-only preview.
         private void HandleMenuSelection(BuildingProductionRequestedEvent e)
         {
             DetachHealthListener();
 
             _entityInfoView.Bind(e.BuildingData);
-            _unitListController.Hide();
             _deleteButton.gameObject.SetActive(false);
+
+            if (e.BuildingData is ProductionBuildingData productionData
+                && productionData.ProducibleUnits != null
+                && productionData.ProducibleUnits.Length > 0)
+                _unitListController.ShowForPreview(productionData.ProducibleUnits);
+            else
+                _unitListController.Hide();
 
             _panelRoot.SetActive(true);
         }
