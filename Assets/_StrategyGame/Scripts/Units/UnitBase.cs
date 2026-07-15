@@ -132,6 +132,7 @@ namespace StrategyGame.Units
 
             _currentHP = Mathf.Max(0, _currentHP - amount);
             OnHealthChanged?.Invoke(_currentHP, MaxHP);
+            _highlight?.FlashDamage();
 
             if (_currentHP <= 0) Die();
         }

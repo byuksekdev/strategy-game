@@ -37,12 +37,6 @@ namespace StrategyGame.Core
     }
 
     // ── Unit ───────────────────────────────────────────────────────────────────
-    // Raised after a unit is spawned and initialized on the grid.
-    public readonly struct UnitSpawnedEvent
-    {
-        public readonly GameObject Unit;
-        public UnitSpawnedEvent(GameObject unit) => Unit = unit;
-    }
 
     // Raised just before a unit is despawned (HP == 0).
     // Carries the unit's last grid position so that UnitSpawnSystem can unregister it

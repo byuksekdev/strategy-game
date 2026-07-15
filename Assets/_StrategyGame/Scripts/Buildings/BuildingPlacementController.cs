@@ -1,3 +1,4 @@
+using Lean.Pool;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using StrategyGame.Core;
@@ -32,6 +33,9 @@ namespace StrategyGame.Buildings
         [SerializeField] private GridHighlighter _highlighter;
 
         [Header("Ghost Settings")]
+        [Tooltip("Prefab with a SpriteRenderer used as the placement ghost. Pooled via LeanPool.")]
+        [SerializeField] private GameObject _ghostPrefab;
+
         [Tooltip("Transparency level of the ghost sprite (0 = fully transparent, 1 = fully opaque).")]
         [SerializeField, Range(0.1f, 1f)] private float _ghostAlpha = 0.65f;
 
@@ -181,12 +185,14 @@ namespace StrategyGame.Buildings
             EventBus.Publish(new PlacementModeExitedEvent());
         }
 
-        // Creates the building ghost: tries to use the prefab's sprite, falls back to the icon.
+        // Creates the building ghost: spawns _ghostPrefab via LeanPool, tries to use the
+        // prefab's sprite, falls back to the icon.
         private void CreateGhost(BuildingData data)
         {
-            _ghostObject = new GameObject("BuildingGhost");
+            _ghostObject = LeanPool.Spawn(_ghostPrefab);
+            _ghostObject.name = "BuildingGhost";
 
-            _ghostRenderer = _ghostObject.AddComponent<SpriteRenderer>();
+            _ghostRenderer = _ghostObject.GetComponent<SpriteRenderer>();
             _ghostRenderer.sprite = ResolveGhostSprite(data);
             _ghostRenderer.color = new Color(1f, 1f, 1f, _ghostAlpha);
             _ghostRenderer.sortingOrder = _ghostSortingOrder;
@@ -218,7 +224,7 @@ namespace StrategyGame.Buildings
         {
             if (_ghostObject == null) return;
 
-            Destroy(_ghostObject);
+            LeanPool.Despawn(_ghostObject);
             _ghostObject = null;
             _ghostRenderer = null;
         }

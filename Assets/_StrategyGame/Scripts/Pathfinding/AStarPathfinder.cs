@@ -28,6 +28,12 @@ namespace StrategyGame.Pathfinding
     //   the old entry is left in place. Stale entries are skipped when popped
     //   (they will not be in inOpenSet). This gives O(log n) push/pop instead of
     //   the previous O(n) linear scan, reducing worst-case cost from O(n²) to O(n log n).
+    //
+    // GC pressure:
+    //   All internal working collections are static and cleared at the start of each
+    //   FindPath() call so no heap allocations occur during the search itself.
+    //   The returned List<Vector2Int> (caller-owned path) is the only allocation per call.
+    //   Safe because Unity runs game logic on the main thread — FindPath() is not reentrant.
     public static class AStarPathfinder
     {
         //-------Public Variables-------//
@@ -42,6 +48,16 @@ namespace StrategyGame.Pathfinding
             public Vector2Int Coord;
         }
 
+        // Static working collections reused across FindPath() calls.
+        // Initial capacities cover typical grid searches without resizing.
+        private static readonly List<HeapNode>                     _heap      = new List<HeapNode>(64);
+        private static readonly HashSet<Vector2Int>                _inOpenSet = new HashSet<Vector2Int>();
+        private static readonly Dictionary<Vector2Int, Vector2Int> _cameFrom  = new Dictionary<Vector2Int, Vector2Int>(128);
+        private static readonly Dictionary<Vector2Int, int>        _gScore    = new Dictionary<Vector2Int, int>(128);
+
+        // Scratch buffer for path reconstruction; result is copied into a correctly-sized list.
+        private static readonly List<Vector2Int> _reconstructBuffer = new List<Vector2Int>(64);
+
         #region PUBLIC_METHODS
 
         public static List<Vector2Int> FindPath(Vector2Int start, Vector2Int end, IGridProvider grid)
@@ -50,24 +66,26 @@ namespace StrategyGame.Pathfinding
             if (start == end) return new List<Vector2Int>();
             if (!grid.IsValidCoordinate(end)) return null;
 
-            var heap      = new List<HeapNode>();
-            var inOpenSet = new HashSet<Vector2Int> { start };
-            var cameFrom  = new Dictionary<Vector2Int, Vector2Int>();
-            var gScore    = new Dictionary<Vector2Int, int> { [start] = 0 };
+            _heap.Clear();
+            _inOpenSet.Clear();
+            _cameFrom.Clear();
+            _gScore.Clear();
 
-            HeapPush(heap, new HeapNode { FScore = Heuristic(start, end), Coord = start });
+            _inOpenSet.Add(start);
+            _gScore[start] = 0;
+            HeapPush(new HeapNode { FScore = Heuristic(start, end), Coord = start });
 
-            while (heap.Count > 0)
+            while (_heap.Count > 0)
             {
-                HeapNode top     = HeapPop(heap);
+                HeapNode   top     = HeapPop();
                 Vector2Int current = top.Coord;
 
                 // Lazy deletion: this entry was superseded by a cheaper one.
-                if (!inOpenSet.Contains(current)) continue;
-                inOpenSet.Remove(current);
+                if (!_inOpenSet.Contains(current)) continue;
+                _inOpenSet.Remove(current);
 
                 if (current == end)
-                    return ReconstructPath(cameFrom, current);
+                    return ReconstructPath(current);
 
                 GridCell currentCell = grid.GetCell(current);
                 if (currentCell == null) continue;
@@ -96,16 +114,15 @@ namespace StrategyGame.Pathfinding
                     }
 
                     int moveCost   = isDiagonal ? DiagonalCost : StraightCost;
-                    int tentativeG = GetScore(gScore, current) + moveCost;
+                    int tentativeG = GetScore(current) + moveCost;
 
-                    if (tentativeG >= GetScore(gScore, nc)) continue;
+                    if (tentativeG >= GetScore(nc)) continue;
 
-                    cameFrom[nc] = current;
-                    gScore[nc]   = tentativeG;
+                    _cameFrom[nc] = current;
+                    _gScore[nc]   = tentativeG;
 
-                    int newF = tentativeG + Heuristic(nc, end);
-                    inOpenSet.Add(nc);
-                    HeapPush(heap, new HeapNode { FScore = newF, Coord = nc });
+                    _inOpenSet.Add(nc);
+                    HeapPush(new HeapNode { FScore = tentativeG + Heuristic(nc, end), Coord = nc });
                 }
             }
 
@@ -116,25 +133,25 @@ namespace StrategyGame.Pathfinding
 
         #region PRIVATE_METHODS
 
-        private static void HeapPush(List<HeapNode> heap, HeapNode node)
+        private static void HeapPush(HeapNode node)
         {
-            heap.Add(node);
-            int i = heap.Count - 1;
+            _heap.Add(node);
+            int i = _heap.Count - 1;
             while (i > 0)
             {
                 int parent = (i - 1) >> 1;
-                if (heap[parent].FScore <= heap[i].FScore) break;
-                (heap[parent], heap[i]) = (heap[i], heap[parent]);
+                if (_heap[parent].FScore <= _heap[i].FScore) break;
+                (_heap[parent], _heap[i]) = (_heap[i], _heap[parent]);
                 i = parent;
             }
         }
 
-        private static HeapNode HeapPop(List<HeapNode> heap)
+        private static HeapNode HeapPop()
         {
-            HeapNode top  = heap[0];
-            int      last = heap.Count - 1;
-            heap[0] = heap[last];
-            heap.RemoveAt(last);
+            HeapNode top  = _heap[0];
+            int      last = _heap.Count - 1;
+            _heap[0] = _heap[last];
+            _heap.RemoveAt(last);
 
             int i = 0;
             while (true)
@@ -143,35 +160,39 @@ namespace StrategyGame.Pathfinding
                 int right    = 2 * i + 2;
                 int smallest = i;
 
-                if (left  < heap.Count && heap[left].FScore  < heap[smallest].FScore) smallest = left;
-                if (right < heap.Count && heap[right].FScore < heap[smallest].FScore) smallest = right;
+                if (left  < _heap.Count && _heap[left].FScore  < _heap[smallest].FScore) smallest = left;
+                if (right < _heap.Count && _heap[right].FScore < _heap[smallest].FScore) smallest = right;
 
                 if (smallest == i) break;
-                (heap[i], heap[smallest]) = (heap[smallest], heap[i]);
+                (_heap[i], _heap[smallest]) = (_heap[smallest], _heap[i]);
                 i = smallest;
             }
 
             return top;
         }
 
-        private static List<Vector2Int> ReconstructPath(
-            Dictionary<Vector2Int, Vector2Int> cameFrom, Vector2Int current)
+        // Walks _cameFrom into _reconstructBuffer (avoids a separate allocation),
+        // reverses in place, then copies to a correctly-sized caller-owned list.
+        private static List<Vector2Int> ReconstructPath(Vector2Int current)
         {
-            var path = new List<Vector2Int>();
+            _reconstructBuffer.Clear();
 
-            while (cameFrom.ContainsKey(current))
+            while (_cameFrom.ContainsKey(current))
             {
-                path.Add(current);
-                current = cameFrom[current];
+                _reconstructBuffer.Add(current);
+                current = _cameFrom[current];
             }
 
-            path.Reverse();
+            _reconstructBuffer.Reverse();
+
+            var path = new List<Vector2Int>(_reconstructBuffer.Count);
+            path.AddRange(_reconstructBuffer);
             return path;
         }
 
-        // Returns the stored score or int.MaxValue/2 to avoid overflow when adding costs.
-        private static int GetScore(Dictionary<Vector2Int, int> dict, Vector2Int key)
-            => dict.TryGetValue(key, out int v) ? v : int.MaxValue / 2;
+        // Returns the stored g-score or int.MaxValue/2 to avoid overflow when adding costs.
+        private static int GetScore(Vector2Int key)
+            => _gScore.TryGetValue(key, out int v) ? v : int.MaxValue / 2;
 
         // Octile distance (scaled by 10): admissible heuristic for 8-directional grids.
         // Formula: StraightCost × max(dx,dy) + (DiagonalCost − StraightCost) × min(dx,dy)

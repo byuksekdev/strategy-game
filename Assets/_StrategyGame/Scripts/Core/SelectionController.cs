@@ -124,7 +124,7 @@ namespace StrategyGame.Core
             UnitBase unit = UnitRegistry.GetUnitAt(coord);
             if (unit != null)
             {
-                if (unit != _currentSelected)
+                if (unit != (Object)_currentSelected)
                     Select(unit);
                 return;
             }
@@ -158,6 +158,7 @@ namespace StrategyGame.Core
                 if (target != null && !target.IsDead)
                 {
                     List<Vector2Int> footprint = GetBuildingFootprint(cell.Occupant);
+                    if (footprint == null) return;
                     actor.AttackTarget(footprint, target);
                     _pathPreviewRenderer?.Clear();
                     return;
@@ -182,12 +183,12 @@ namespace StrategyGame.Core
         }
 
         // Collects every grid cell belonging to the building's rectangular footprint.
-        // Falls back to a single-cell list when the BuildingBase component is absent.
+        // Returns null when BuildingBase or its data is missing — callers must guard.
         private static List<Vector2Int> GetBuildingFootprint(GameObject buildingGo)
         {
             BuildingBase building = buildingGo.GetComponent<BuildingBase>();
             if (building == null || building.BuildingData == null)
-                return new List<Vector2Int>(1) { Vector2Int.zero };
+                return null;
 
             Vector2Int origin = building.GridOrigin;
             Vector2Int size   = building.BuildingData.Size;

@@ -21,6 +21,11 @@ namespace StrategyGame.UI.InformationPanel
         [SerializeField] private GameObject _hpRow;
         [SerializeField] private TextMeshProUGUI _hpText;
 
+        [Header("Dimensions")]
+        [Tooltip("The root GameObject of the Dimensions row. Hidden for non-building entities.")]
+        [SerializeField] private GameObject _dimensionRow;
+        [SerializeField] private TextMeshProUGUI _dimensionText;
+
         //------Private Variables-------//
 
         #region UNITY_METHODS
@@ -51,6 +56,7 @@ namespace StrategyGame.UI.InformationPanel
             _iconImage.enabled = hasIcon;
 
             RefreshHP(damageable);
+            RefreshDimensions(data as BuildingData);
 
             gameObject.SetActive(true);
         }
@@ -81,12 +87,32 @@ namespace StrategyGame.UI.InformationPanel
             if (_hpRow != null)
                 _hpRow.SetActive(false);
 
+            if (_dimensionRow != null)
+                _dimensionRow.SetActive(false);
+
             gameObject.SetActive(false);
         }
 
         #endregion
 
         #region PRIVATE_METHODS
+
+        // Shows or hides the dimension row based on whether the entity is a building.
+        // Only BuildingData carries a Size; units and unplaced items hide this row.
+        private void RefreshDimensions(BuildingData buildingData)
+        {
+            if (_dimensionRow == null) return;
+
+            if (buildingData == null)
+            {
+                _dimensionRow.SetActive(false);
+                return;
+            }
+
+            _dimensionRow.SetActive(true);
+            if (_dimensionText != null)
+                _dimensionText.SetText($"Boyut: {buildingData.Size.x}×{buildingData.Size.y}");
+        }
 
         #endregion
     }

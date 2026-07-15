@@ -6,7 +6,7 @@ namespace StrategyGame.Core
 {
     // Generic publish-subscribe bus for cross-system communication.
     // Each event type gets its own isolated channel keyed by Type, so
-    // Subscribe<BuildingPlacedEvent> and Subscribe<UnitSpawnedEvent> never interfere.
+    // Subscribe<BuildingPlacedEvent> never interfere.
     //
     // Subscribe in OnEnable, Unsubscribe in OnDisable.
     // This ensures pooled objects and panel-toggled MonoBehaviours never leak references.
@@ -46,8 +46,20 @@ namespace StrategyGame.Core
 
         public static void Publish<T>(T eventData) where T : struct
         {
-            if (_channels.TryGetValue(typeof(T), out var d))
-                ((Action<T>)d).Invoke(eventData);
+            if (!_channels.TryGetValue(typeof(T), out var d)) return;
+
+            var invocationList = d.GetInvocationList();
+            foreach (var handler in invocationList)
+            {
+                try
+                {
+                    ((Action<T>)handler).Invoke(eventData);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[EventBus] Subscriber threw an exception for event '{typeof(T).Name}': {ex}");
+                }
+            }
         }
     }
 }

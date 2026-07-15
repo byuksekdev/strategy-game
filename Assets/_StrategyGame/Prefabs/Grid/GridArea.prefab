@@ -208,6 +208,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _highlighter: {fileID: 2499694219118060416}
+  _ghostPrefab: {fileID: 1428029613890399429, guid: 4528077e18df5405a9fc86daf7444ce2, type: 3}
   _ghostAlpha: 0.8
   _ghostSortingOrder: 5
 --- !u!114 &2043561487
@@ -337,7 +338,7 @@ GameObject:
   - component: {fileID: 2499694219118060417}
   - component: {fileID: 2499694219118060416}
   m_Layer: 0
-  m_Name: GridHighligter
+  m_Name: GridHighlighter
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

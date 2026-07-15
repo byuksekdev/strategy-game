@@ -28,7 +28,9 @@ namespace StrategyGame.Buildings
         public int CurrentHP => _currentHP;
         public bool IsDead => _currentHP <= 0;
 
-        // IProducible — used by the production menu to retrieve display data.
+        // IProducible (StrategyGame.Data) — exposes the backing data asset of this runtime building.
+        // EntityData also implements IProducible directly (Data => this), so both data assets
+        // and placed buildings are polymorphically consumable wherever IProducible is expected.
         public EntityData Data => _buildingData;
 
         // IInfoPanelProvider — used by InformationPanelController without casting to a concrete type.
@@ -90,6 +92,7 @@ namespace StrategyGame.Buildings
 
             _currentHP = Mathf.Max(0, _currentHP - amount);
             OnHealthChanged?.Invoke(_currentHP, MaxHP);
+            _highlight?.FlashDamage();
 
             if (IsDead) Die();
         }

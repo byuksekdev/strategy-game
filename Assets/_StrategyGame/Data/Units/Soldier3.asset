@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6cd2d9a3b1e844e37a207235d58b4fd0, type: 3}
   m_Name: Soldier3
   m_EditorClassIdentifier: 
-  _displayName: Solider 3
+  _displayName: Soldier 3
   _icon: {fileID: 21300000, guid: bae7bab6c7ca84684830b529c427689e, type: 3}
   _maxHP: 10
   _attackDamage: 2
   _moveSpeed: 3
+  _attackCooldown: 1
   _prefab: {fileID: 65222102864385722, guid: 9a1abbdfd5353487e940aaef3080724e, type: 3}

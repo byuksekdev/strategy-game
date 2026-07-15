@@ -5,9 +5,17 @@ using StrategyGame.Data;
 namespace StrategyGame.UI.ProductionMenu
 {
     // Manages the production menu on the left panel (MVC — Controller layer).
+    //
     // Responsibilities:
-    //   1. Injects the building list from ProductionMenuConfig into InfiniteScrollView.
-    //   2. Publishes the BuildingProductionRequested event when a building item is clicked.
+    //   1. Feeds ProductionMenuConfig.AvailableEntities (List<EntityData> / IProducible) into
+    //      InfiniteScrollView — the scroll view is fully generic; it never sees BuildingData.
+    //   2. On click, casts EntityData to BuildingData and publishes BuildingProductionRequestedEvent.
+    //      The cast is intentional: the production menu only ever lists buildings today,
+    //      and BuildingPlacementController requires BuildingData for grid/ghost operations.
+    //      If future entity types need different events, add a dispatch method here (OCP).
+    //
+    // DIP: this class depends on IProducible / EntityData abstractions, not on BuildingData directly.
+    // OCP: adding a new producible kind only requires a new event dispatch branch, not a rewrite.
     public class ProductionMenuController : MonoBehaviour
     {
         //-------Public Variables-------//
@@ -25,7 +33,7 @@ namespace StrategyGame.UI.ProductionMenu
 
         private void Awake()
         {
-            PopulateBuildingList();
+            PopulateProductionList();
         }
 
         #endregion
@@ -36,7 +44,7 @@ namespace StrategyGame.UI.ProductionMenu
 
         #region PRIVATE_METHODS
 
-        private void PopulateBuildingList()
+        private void PopulateProductionList()
         {
             if (_config == null)
             {
@@ -50,15 +58,18 @@ namespace StrategyGame.UI.ProductionMenu
                 return;
             }
 
-            _buildingScrollView.Initialize(
-                _config.AvailableBuildings, OnBuildingItemClicked);
+            // Pass the generic IProducible list; InfiniteScrollView does not know about BuildingData.
+            _buildingScrollView.Initialize(_config.AvailableEntities, OnProducibleItemClicked);
         }
 
-        // When a building item is clicked, it publishes the BuildingProductionRequestedEvent to the event bus;
-        // both the placement system and the information panel react to it.
-        private void OnBuildingItemClicked(BuildingData data)
+        // Dispatches the appropriate event for the clicked IProducible item.
+        // Currently only BuildingData is supported; extend here for future entity kinds.
+        private void OnProducibleItemClicked(EntityData data)
         {
-            EventBus.Publish(new BuildingProductionRequestedEvent(data));
+            if (data is BuildingData buildingData)
+                EventBus.Publish(new BuildingProductionRequestedEvent(buildingData));
+            else
+                Debug.LogWarning($"[ProductionMenuController] No handler for producible type: {data?.GetType().Name}");
         }
 
         #endregion

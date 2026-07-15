@@ -149,7 +149,6 @@ namespace StrategyGame.Units
             // Register after Initialize() so _gridPosition is set inside the unit.
             // UnitSpawnSystem owns registry lifecycle (SRP); UnitBase.Initialize() does not.
             UnitRegistry.Register(unit, cell);
-            EventBus.Publish(new UnitSpawnedEvent(go));
         }
 
         #endregion

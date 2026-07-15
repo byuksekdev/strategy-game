@@ -1,28 +1,7 @@
-using UnityEngine;
-
 namespace StrategyGame.Buildings
 {
-    // Watch Tower: a passive building with no unit production capability.
-    // All HP, selection, and data-binding logic is fully inherited from BuildingBase.
-    // Extend this class if Power Plant gains future mechanics (e.g., energy buffs, area effects).
-    public class WatchTower : BuildingBase
-    {
-        //-------Public Variables-------//
-
-        //------Serialized Fields-------//
-
-        //------Private Variables-------//
-
-        #region UNITY_METHODS
-
-        #endregion
-
-        #region PUBLIC_METHODS
-
-        #endregion
-
-        #region PRIVATE_METHODS
-
-        #endregion
-    }
+    // Passive building with no unit production capability.
+    // HP, selection, and data-binding are fully handled by BuildingBase.
+    // Extend here if Watch Tower gains future mechanics (e.g. line-of-sight reveal, ranged attack).
+    public class WatchTower : BuildingBase { }
 }

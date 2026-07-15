@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using Lean.Pool;
 using StrategyGame.Data;
-using StrategyGame.UI.ProductionMenu;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -24,7 +23,7 @@ namespace StrategyGame.UI
         [SerializeField] private float _itemSpacing = 10f;
 
         //------ Private Variables -------//
-        private List<BuildingData> _dataList;
+        private List<EntityData> _dataList;
         private Action<EntityData> _onEntityClicked;
 
         // Active items are stored in a doubly linked list: head = topmost, tail = bottommost
@@ -52,7 +51,10 @@ namespace StrategyGame.UI
 
         #region PUBLIC_METHODS
 
-        public void Initialize(List<BuildingData> dataList, Action<BuildingData> onBuildingClicked)
+        // Initialises the scroll view with any list of EntityData (IProducible) items.
+        // The callback receives the clicked EntityData so callers can cast to the concrete
+        // type they need (e.g. BuildingData for placement) while this view stays generic.
+        public void Initialize(List<EntityData> dataList, Action<EntityData> onEntityClicked)
         {
             if (dataList == null || dataList.Count == 0)
             {
@@ -60,9 +62,11 @@ namespace StrategyGame.UI
                 return;
             }
 
+            if (_activeItems.Count > 0)
+                Clear();
+
             _dataList = dataList;
-            // ProductionItemView.Bind Action<EntityData> is needed; so we need to bridge the lambda
-            _onEntityClicked = entity => onBuildingClicked?.Invoke(entity as BuildingData);
+            _onEntityClicked = onEntityClicked;
 
             MeasureItemSize();
 

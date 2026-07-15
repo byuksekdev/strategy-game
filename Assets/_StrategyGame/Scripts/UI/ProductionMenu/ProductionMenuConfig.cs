@@ -4,18 +4,20 @@ using StrategyGame.Data;
 
 namespace StrategyGame.UI.ProductionMenu
 {
-    // Production Menu Config: Defines the buildings listed in the production menu.
-    // Filled in the Inspector; new building types can be added here without code changes.
+    // Production Menu Config: Defines the producible items listed in the production menu.
+    // Stores EntityData (base type) so the menu is open to any future producible kind
+    // (buildings, vehicles, heroes…) without code changes — OCP / DIP.
+    // Concrete assets (BuildingData, UnitData, …) can be assigned freely in the Inspector.
     [CreateAssetMenu(fileName = "ProductionMenuConfig",
                      menuName  = "StrategyGame/Config/Production Menu Config")]
     public class ProductionMenuConfig : ScriptableObject
     {
         //-------Public Variables-------//
-        public List<BuildingData> AvailableBuildings => _availableBuildings;
+        public List<EntityData> AvailableEntities => _availableEntities;
 
         //------Serialized Fields-------//
-        [Header("Buildings to be listed in the production menu (order, display order)")]
-        [SerializeField] private List<BuildingData> _availableBuildings;
+        [Header("Producible items to list in the production menu (drag EntityData assets here)")]
+        [SerializeField] private List<EntityData> _availableEntities;
 
         //------Private Variables-------//
 
