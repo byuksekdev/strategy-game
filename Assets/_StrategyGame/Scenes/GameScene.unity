@@ -639,38 +639,6 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 331559256786089705, guid: bda6ee978db144488828c7682989fe4e, type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 331559256786089705, guid: bda6ee978db144488828c7682989fe4e, type: 3}
-      propertyPath: m_AnchorMin.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 331559256786089705, guid: bda6ee978db144488828c7682989fe4e, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 331559256786089705, guid: bda6ee978db144488828c7682989fe4e, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 331559258152223770, guid: bda6ee978db144488828c7682989fe4e, type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 331559258152223770, guid: bda6ee978db144488828c7682989fe4e, type: 3}
-      propertyPath: m_AnchorMin.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 331559258152223770, guid: bda6ee978db144488828c7682989fe4e, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 331559258152223770, guid: bda6ee978db144488828c7682989fe4e, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 2938586668700695970, guid: bda6ee978db144488828c7682989fe4e, type: 3}
       propertyPath: m_Name
       value: GameCanvas

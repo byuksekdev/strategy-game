@@ -111,7 +111,7 @@ namespace StrategyGame.UI.InformationPanel
 
             _dimensionRow.SetActive(true);
             if (_dimensionText != null)
-                _dimensionText.SetText($"Boyut: {buildingData.Size.x}×{buildingData.Size.y}");
+                _dimensionText.SetText($"Size: {buildingData.Size.x}×{buildingData.Size.y}");
         }
 
         #endregion

@@ -31,7 +31,7 @@ namespace StrategyGame.UI.ProductionMenu
 
         #region UNITY_METHODS
 
-        private void Awake()
+        private void Start()
         {
             PopulateProductionList();
         }

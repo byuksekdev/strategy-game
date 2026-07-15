@@ -96,8 +96,10 @@ namespace StrategyGame.UI
         // For size measurement, a single spawn is performed, and then returned immediately.
         private void MeasureItemSize()
         {
-            var sample = LeanPool.Spawn(_itemPrefab, _content);
             Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_viewport);
+
+            var sample = LeanPool.Spawn(_itemPrefab, _content);
             _itemHeight = sample.GetComponent<RectTransform>().rect.height;
             LeanPool.Despawn(sample);
             _itemStep = _itemHeight + _itemSpacing;
